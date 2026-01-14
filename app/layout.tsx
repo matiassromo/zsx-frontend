@@ -14,7 +14,7 @@ export default function RootLayout({
           <Sidebar />
 
           {/* Main content area */}
-          <main className="flex-1 pt-16 md:pt-0 md:ml-[20vw]">{children}</main>
+          <main className="flex-1 p-4 pt-16 md:pt-4 md:ml-[20vw]">{children}</main>
         </div>
       </body>
     </html>
