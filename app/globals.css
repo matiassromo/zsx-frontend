@@ -1,14 +1,1 @@
-/*CSS Reset*/
-/* selector universal*/
-*, 
-*::after,
-*::before {
-    margin: 0px;
-    padding: 0px;
-    /*tamaño de contenedor (width/height) incluye borders y paddings*/
-    box-sizing: inherit; 
-}
-
-body {
-	box-sizing: border-box;
-}
+@import "tailwindcss";
