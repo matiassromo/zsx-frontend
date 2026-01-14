@@ -66,9 +66,34 @@ export function Sidebar() {
           </svg>
         </button>
 
-        {/* Sidebar content placeholder */}
+        {/* Logo */}
         <div className="p-4 pt-16 md:pt-4">
-          <p className="text-gray-500">Sidebar content</p>
+          <div className="flex items-center gap-3">
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 40 40"
+              fill="none"
+              className="shrink-0"
+            >
+              <rect width="40" height="40" rx="8" fill="#3B82F6" />
+              <text
+                x="50%"
+                y="50%"
+                dominantBaseline="central"
+                textAnchor="middle"
+                fill="white"
+                fontSize="22"
+                fontWeight="bold"
+                fontFamily="system-ui, sans-serif"
+              >
+                Z
+              </text>
+            </svg>
+            <div>
+              <h1 className="font-semibold text-gray-900">Zero Stress</h1>
+            </div>
+          </div>
         </div>
       </nav>
     </>
