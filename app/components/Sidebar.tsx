@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { SidebarButton } from './SidebarButton'
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -95,6 +96,11 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+
+        {/* Navigation */}
+        <nav className="mt-4 px-4">
+          <SidebarButton href="/clientes">Clientes</SidebarButton>
+        </nav>
       </nav>
     </>
   )
