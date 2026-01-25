@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import InfoBar from '@/app/components/InfoBar';
 import { KeysGrid } from './components/KeysGrid';
 import { ReleaseKeyDialog } from './components/ReleaseKeyDialog';
-import { KeyDetailsDialog } from './components/KeyDetailsDialog';
 import { useKeys } from './hooks/useKeys';
 import type { Key } from '@/lib/api/types';
 
@@ -17,7 +16,6 @@ function sortByNumericPrefix(a: Key, b: Key): number {
 export default function LockersPage() {
   const { keys, isLoading, refetch } = useKeys();
   const [releasingKey, setReleasingKey] = useState<Key | null>(null);
-  const [viewingKey, setViewingKey] = useState<Key | null>(null);
 
   const menKeys = useMemo(
     () => keys.filter((k) => k.keyCode.endsWith('H')).sort(sortByNumericPrefix),
@@ -34,11 +32,9 @@ export default function LockersPage() {
   const occupiedKeys = totalKeys - availableKeys;
 
   const handleKeyClick = (key: Key) => {
-    if (key.available) {
-      setViewingKey(key);
-    } else {
-      setReleasingKey(key);
-    }
+    // Solo interesa la asignación activa (ocupada) -> liberar
+    if (!key.available) setReleasingKey(key);
+    // Si está libre: no mostrar nada
   };
 
   const handleReleaseSuccess = () => {
@@ -50,7 +46,6 @@ export default function LockersPage() {
     <div className="space-y-4">
       <InfoBar title="LOCKERS" />
 
-      {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
           Total: {totalKeys}
@@ -69,7 +64,6 @@ export default function LockersPage() {
         </span>
       </div>
 
-      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <KeysGrid
           title="Hombres"
@@ -85,19 +79,11 @@ export default function LockersPage() {
         />
       </div>
 
-      {/* Release confirmation dialog */}
       <ReleaseKeyDialog
         keyData={releasingKey}
         isOpen={!!releasingKey}
         onClose={() => setReleasingKey(null)}
         onSuccess={handleReleaseSuccess}
-      />
-
-      {/* Key details dialog */}
-      <KeyDetailsDialog
-        keyData={viewingKey}
-        isOpen={!!viewingKey}
-        onClose={() => setViewingKey(null)}
       />
     </div>
   );

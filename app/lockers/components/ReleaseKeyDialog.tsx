@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
 import { updateKey } from '@/lib/api/keys';
+import { getTransactionDetail } from '@/lib/api/transactions';
 import type { Key } from '@/lib/api/types';
 import toast from 'react-hot-toast';
 
@@ -15,8 +16,53 @@ interface ReleaseKeyDialogProps {
 
 export function ReleaseKeyDialog({ keyData, isOpen, onClose, onSuccess }: ReleaseKeyDialogProps) {
   const [isReleasing, setIsReleasing] = useState(false);
+  const [resolvedClientName, setResolvedClientName] = useState<string>('');
 
-  const clientName = keyData?.transaction?.client?.name || 'Desconocido';
+  const transactionId = useMemo(() => {
+    if (!keyData) return null;
+    return keyData.transactionId ?? keyData.transaction?.id ?? null;
+  }, [keyData]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolve() {
+      if (!isOpen || !keyData) return;
+
+      // Si ya vino el nombre poblado desde /api/Keys
+      const direct = keyData.transaction?.client?.name;
+      if (direct) {
+        setResolvedClientName(direct);
+        return;
+      }
+
+      // Si no hay transactionId, no hay forma de resolver
+      if (!transactionId) {
+        setResolvedClientName('N/A');
+        return;
+      }
+
+      try {
+        const detail = await getTransactionDetail(transactionId);
+        const name = detail?.transaction?.client?.name?.trim() || 'N/A'; // ✅ FIX
+        if (!cancelled) setResolvedClientName(name);
+      } catch {
+        if (!cancelled) setResolvedClientName('N/A');
+      }
+    }
+
+    setResolvedClientName('');
+    resolve();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, keyData, transactionId]);
+
+  const clientName =
+    keyData?.transaction?.client?.name ||
+    resolvedClientName ||
+    'Cargando...';
 
   const handleRelease = async () => {
     if (!keyData) return;
@@ -24,7 +70,12 @@ export function ReleaseKeyDialog({ keyData, isOpen, onClose, onSuccess }: Releas
     setIsReleasing(true);
 
     try {
-      await updateKey(keyData.id, { available: true });
+      await updateKey(keyData.id, {
+        transactionId: null,
+        available: true,
+        lastAssignedAt: null,
+      });
+
       toast.success(`Llave ${keyData.keyCode} liberada correctamente`);
       onSuccess();
       onClose();
@@ -39,14 +90,8 @@ export function ReleaseKeyDialog({ keyData, isOpen, onClose, onSuccess }: Releas
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Confirmar liberacion" size="sm">
       <div className="flex flex-col items-center text-center -mt-4">
-        {/* Question mark icon in teal circle */}
         <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mb-4">
-          <svg
-            className="w-8 h-8 text-teal-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -69,7 +114,7 @@ export function ReleaseKeyDialog({ keyData, isOpen, onClose, onSuccess }: Releas
             type="button"
             onClick={onClose}
             disabled={isReleasing}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -77,31 +122,9 @@ export function ReleaseKeyDialog({ keyData, isOpen, onClose, onSuccess }: Releas
             type="button"
             onClick={handleRelease}
             disabled={isReleasing}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 disabled:opacity-50"
           >
-            {isReleasing ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Liberando...
-              </span>
-            ) : (
-              'Si, liberar'
-            )}
+            {isReleasing ? 'Liberando...' : 'Si, liberar'}
           </button>
         </div>
       </div>
