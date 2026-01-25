@@ -30,6 +30,106 @@ const initialFormData: ClientRequestDto = {
   number: '',
 };
 
+function onlyDigits(s: string) {
+  return (s ?? '').replace(/\D+/g, '');
+}
+
+// --- Teléfono Ecuador (opcional) ---
+function isValidEcuadorPhone(phone: string) {
+  const p = onlyDigits(phone);
+
+  // opcional
+  if (!p) return true;
+
+  // móvil: 10 dígitos, empieza 09
+  if (/^09\d{8}$/.test(p)) return true;
+
+  // fijo: 9 dígitos, empieza 02..07
+  if (/^0[2-7]\d{7}$/.test(p)) return true;
+
+  return false;
+}
+
+function normalizePhoneForSend(phone: string) {
+  const p = onlyDigits(phone);
+  return p ? p : null;
+}
+
+// --- Cédula Ecuador ---
+function isValidEcuadorCedula(cedula: string) {
+  if (!/^\d{10}$/.test(cedula)) return false;
+
+  const prov = Number(cedula.slice(0, 2));
+  if (prov < 1 || prov > 24) return false;
+
+  const third = Number(cedula[2]);
+  if (third < 0 || third > 5) return false;
+
+  const digits = cedula.split('').map(Number);
+  const check = digits[9];
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    let v = digits[i];
+    if (i % 2 === 0) {
+      v *= 2;
+      if (v > 9) v -= 9;
+    }
+    sum += v;
+  }
+  const nextTen = Math.ceil(sum / 10) * 10;
+  const verifier = (nextTen - sum) % 10;
+
+  return verifier === check;
+}
+
+// --- RUC Ecuador (natural / público / privado) ---
+function mod11Check(digits: number[], coefs: number[], checkDigit: number) {
+  let sum = 0;
+  for (let i = 0; i < coefs.length; i++) sum += digits[i] * coefs[i];
+  const mod = sum % 11;
+  const verifier = mod === 0 ? 0 : 11 - mod;
+  return verifier === checkDigit;
+}
+
+function isValidEcuadorRuc(ruc: string) {
+  if (!/^\d{13}$/.test(ruc)) return false;
+
+  const prov = Number(ruc.slice(0, 2));
+  if (prov < 1 || prov > 24) return false;
+
+  const third = Number(ruc[2]);
+  const estab = ruc.slice(10, 13);
+
+  // establecimiento no puede ser 000
+  if (estab === '000') return false;
+
+  const digits = ruc.split('').map(Number);
+
+  // Natural (0-5): primeros 10 como cédula (estab puede ser distinto, no obligo 001)
+  if (third >= 0 && third <= 5) {
+    return isValidEcuadorCedula(ruc.slice(0, 10));
+  }
+
+  // Pública (6): verificador en pos 9 (index 8) y estab debe ser 001
+  if (third === 6) {
+    if (estab !== '001') return false;
+    const checkDigit = digits[8];
+    const coefs = [3, 2, 7, 6, 5, 4, 3, 2];
+    return mod11Check(digits, coefs, checkDigit);
+  }
+
+  // Privada (9): verificador en pos 10 (index 9) y estab debe ser 001
+  if (third === 9) {
+    if (estab !== '001') return false;
+    const checkDigit = digits[9];
+    const coefs = [4, 3, 2, 7, 6, 5, 4, 3, 2];
+    return mod11Check(digits, coefs, checkDigit);
+  }
+
+  return false;
+}
+
 export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFormModalProps) {
   const [formData, setFormData] = useState<ClientRequestDto>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,21 +138,22 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
   const isEditMode = !!client;
 
   useEffect(() => {
-    if (isOpen) {
-      if (client) {
-        setFormData({
-          name: client.name,
-          documentType: client.documentType,
-          documentNumber: client.documentNumber || '',
-          email: client.email || '',
-          address: client.address || '',
-          number: client.number || '',
-        });
-      } else {
-        setFormData(initialFormData);
-      }
-      setErrors({});
+    if (!isOpen) return;
+
+    if (client) {
+      setFormData({
+        name: client.name,
+        documentType: client.documentType,
+        documentNumber: client.documentNumber || '',
+        email: client.email || '',
+        address: client.address || '',
+        number: client.number || '',
+      });
+    } else {
+      setFormData(initialFormData);
     }
+
+    setErrors({});
   }, [isOpen, client]);
 
   const validate = (): boolean => {
@@ -62,8 +163,26 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
       newErrors.name = 'El nombre es requerido';
     }
 
+    const dt = formData.documentType || '';
+    const dn = onlyDigits(formData.documentNumber || '');
+
+    // Documento
+    if (!dt) {
+      if (dn.length > 0) newErrors.documentNumber = 'Si seleccionas "Sin documento", deja el número vacío';
+    } else if (dt === 'Cedula') {
+      if (!isValidEcuadorCedula(dn)) newErrors.documentNumber = 'Cédula inválida';
+    } else if (dt === 'Ruc') {
+      if (!isValidEcuadorRuc(dn)) newErrors.documentNumber = 'RUC inválido';
+    }
+
+    // Email
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email invalido';
+    }
+
+    // Teléfono (opcional)
+    if (formData.number && !isValidEcuadorPhone(formData.number)) {
+      newErrors.number = 'Teléfono inválido (EC). Ej: 0999999999 o 022345678';
     }
 
     setErrors(newErrors);
@@ -72,7 +191,6 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
 
     setIsSubmitting(true);
@@ -81,10 +199,10 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
       const data: ClientRequestDto = {
         name: formData.name.trim(),
         documentType: formData.documentType || undefined,
-        documentNumber: formData.documentNumber?.trim() || null,
+        documentNumber: formData.documentNumber ? onlyDigits(formData.documentNumber) : null,
         email: formData.email?.trim() || null,
         address: formData.address?.trim() || null,
-        number: formData.number?.trim() || null,
+        number: normalizePhoneForSend(formData.number || ''),
       };
 
       if (isEditMode && client) {
@@ -106,10 +224,38 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
   };
 
   const handleChange = (field: keyof ClientRequestDto, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: field === 'documentType' ? (value as DocumentType) || undefined : value,
-    }));
+    setFormData((prev) => {
+      // documentType
+      if (field === 'documentType') {
+        const nextType = (value as DocumentType) || undefined;
+
+        // si cambias a "Sin documento", limpia el número
+        return {
+          ...prev,
+          documentType: nextType,
+          documentNumber: nextType ? prev.documentNumber : '',
+        };
+      }
+
+      // documentNumber: solo dígitos + max len según tipo
+      if (field === 'documentNumber') {
+        const digits = onlyDigits(value);
+        const dt = prev.documentType || '';
+        const max = dt === 'Ruc' ? 13 : dt === 'Cedula' ? 10 : 0;
+        return {
+          ...prev,
+          documentNumber: max ? digits.slice(0, max) : '',
+        };
+      }
+
+      // number (teléfono): solo dígitos, max 10
+      if (field === 'number') {
+        const digits = onlyDigits(value).slice(0, 10);
+        return { ...prev, number: digits };
+      }
+
+      return { ...prev, [field]: value };
+    });
 
     if (errors[field]) {
       setErrors((prev) => {
@@ -149,7 +295,9 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
             label="Numero de Documento"
             value={formData.documentNumber || ''}
             onChange={(e) => handleChange('documentNumber', e.target.value)}
-            placeholder="Ej: 1234567890"
+            placeholder={formData.documentType === 'Ruc' ? 'Ej: 1790012345001' : 'Ej: 1234567890'}
+            error={errors.documentNumber}
+            disabled={!formData.documentType}
           />
         </div>
 
@@ -175,6 +323,7 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
           value={formData.number || ''}
           onChange={(e) => handleChange('number', e.target.value)}
           placeholder="Ej: 0999999999"
+          error={errors.number}
         />
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
@@ -186,6 +335,7 @@ export function ClientFormModal({ isOpen, onClose, onSuccess, client }: ClientFo
           >
             Cancelar
           </button>
+
           <button
             type="submit"
             disabled={isSubmitting}
