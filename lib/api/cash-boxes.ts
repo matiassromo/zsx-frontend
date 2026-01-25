@@ -7,87 +7,101 @@ import type {
   CloseCashBoxRequestDto,
 } from "./types";
 
-export async function getTodayCashBox(date?: string): Promise<CashBox | null> {
-  return apiClient<CashBox | null>("/api/CashBoxes/today", {
-    params: date ? { date } : undefined,
-  });
+type AnyRecord = Record<string, any>;
+
+function pick<T = any>(obj: AnyRecord | null | undefined, pascal: string, camel?: string): T {
+  if (!obj) return undefined as T;
+  if (obj[pascal] !== undefined) return obj[pascal] as T;
+  if (camel && obj[camel] !== undefined) return obj[camel] as T;
+  // fallback: intenta camel por defecto (Id -> id)
+  const autoCamel = pascal.charAt(0).toLowerCase() + pascal.slice(1);
+  if (obj[autoCamel] !== undefined) return obj[autoCamel] as T;
+  return undefined as T;
 }
 
-export async function getCashBoxesByRange(
-  from?: string,
-  to?: string
-): Promise<CashBox[]> {
-  return apiClient<CashBox[]>("/api/CashBoxes/range", {
+function mapCashBoxStatus(v: any): "Open" | "Closed" {
+  // soporta: 0/1, "Open"/"Closed", "open"/"closed"
+  if (v === 0 || v === "Open" || v === "open") return "Open";
+  if (v === 1 || v === "Closed" || v === "closed") return "Closed";
+  return "Closed";
+}
+
+function mapCashBoxDtoToFront(raw: AnyRecord): CashBox {
+  return {
+    id: pick<string>(raw, "Id", "id"),
+    status: mapCashBoxStatus(pick<any>(raw, "Status", "status")),
+    openingBalance: pick<number>(raw, "OpeningBalance", "openingBalance"),
+    closingBalance: pick<number | null>(raw, "ClosingBalance", "closingBalance") ?? null,
+    openedAt: pick<string>(raw, "OpenedAt", "openedAt"),
+    closedAt: pick<string | null>(raw, "ClosedAt", "closedAt") ?? null,
+    notes: (pick<string | null>(raw, "Notes", "notes") ?? null),
+  };
+}
+
+export async function getTodayCashBox(date?: string): Promise<CashBox | null> {
+  const response = await apiClient<any>("/api/CashBoxes/today", {
+    params: date ? { date } : undefined,
+  });
+
+  if (!response) return null;
+  return mapCashBoxDtoToFront(response);
+}
+
+export async function getCashBoxesByRange(from?: string, to?: string): Promise<CashBox[]> {
+  const list = await apiClient<any[]>("/api/CashBoxes/range", {
     params: { from, to },
   });
+
+  if (!Array.isArray(list)) return [];
+  return list.map(mapCashBoxDtoToFront);
 }
 
 export async function getCashBoxTransactions(id: string): Promise<Transaction[]> {
   return apiClient<Transaction[]>(`/api/CashBoxes/${id}/transactions`);
 }
 
-interface CashBoxResponse {
-  Id: string;
-  Status: 'Open' | 'Closed';
-  OpeningBalance: number;
-  ClosingBalance?: number | null;
-  OpenedAt: string;
-  ClosedAt?: string | null;
-  Notes?: string | null;
-}
+export async function getCashBoxSummary(id?: string): Promise<CashBoxSummary | null> {
+  if (!id) return null;
 
-interface CashBoxSummaryResponse {
-  CashBox: CashBoxResponse;
-  TotalCharges: number;
-  TotalPayments: number;
-  Cash: number;
-  Transfer: number;
-  OpenTransactions: number;
-  ClosedTransactions: number;
-}
+  const response = await apiClient<any>(`/api/CashBoxes/${id}/summary`);
+  if (!response) return null;
 
-export async function getCashBoxSummary(id: string): Promise<CashBoxSummary> {
-  const response = await apiClient<CashBoxSummaryResponse>(`/api/CashBoxes/${id}/summary`);
+  const cashBoxRaw = pick<any>(response, "CashBox", "cashBox");
+  if (!cashBoxRaw) return null;
+
   return {
-    cashBox: {
-      id: response.CashBox.Id,
-      status: response.CashBox.Status,
-      openingBalance: response.CashBox.OpeningBalance,
-      closingBalance: response.CashBox.ClosingBalance,
-      openedAt: response.CashBox.OpenedAt,
-      closedAt: response.CashBox.ClosedAt,
-      notes: response.CashBox.Notes,
-    },
-    totalCharges: response.TotalCharges,
-    totalPayments: response.TotalPayments,
-    cash: response.Cash,
-    transfer: response.Transfer,
-    openTransactions: response.OpenTransactions,
-    closedTransactions: response.ClosedTransactions,
+    cashBox: mapCashBoxDtoToFront(cashBoxRaw),
+    totalCharges: pick<number>(response, "TotalCharges", "totalCharges") ?? 0,
+    totalPayments: pick<number>(response, "TotalPayments", "totalPayments") ?? 0,
+    cash: pick<number>(response, "Cash", "cash") ?? 0,
+    transfer: pick<number>(response, "Transfer", "transfer") ?? 0,
+    openTransactions: pick<number>(response, "OpenTransactions", "openTransactions") ?? 0,
+    closedTransactions: pick<number>(response, "ClosedTransactions", "closedTransactions") ?? 0,
   };
 }
 
-export async function openCashBox(
-  data: OpenCashBoxRequestDto
-): Promise<CashBox> {
-  return apiClient<CashBox>("/api/CashBoxes/open", {
+export async function openCashBox(data: OpenCashBoxRequestDto): Promise<CashBox> {
+  const response = await apiClient<any>("/api/CashBoxes/open", {
     method: "POST",
     body: data,
   });
+
+  return mapCashBoxDtoToFront(response);
 }
 
-export async function closeCashBox(
-  id: string,
-  data: CloseCashBoxRequestDto
-): Promise<CashBox> {
-  return apiClient<CashBox>(`/api/CashBoxes/${id}/close`, {
+export async function closeCashBox(id: string, data: CloseCashBoxRequestDto): Promise<CashBox> {
+  const response = await apiClient<any>(`/api/CashBoxes/${id}/close`, {
     method: "POST",
     body: data,
   });
+
+  return mapCashBoxDtoToFront(response);
 }
 
 export async function reopenCashBox(id: string): Promise<CashBox> {
-  return apiClient<CashBox>(`/api/CashBoxes/${id}/reopen`, {
+  const response = await apiClient<any>(`/api/CashBoxes/${id}/reopen`, {
     method: "POST",
   });
+
+  return mapCashBoxDtoToFront(response);
 }
