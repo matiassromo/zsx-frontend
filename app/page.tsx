@@ -1,4 +1,5 @@
+import { redirect } from "next/navigation";
 
-export default function Dashboard() {
-  return <h1>Hello Next.js!</h1>;
+export default function HomePage() {
+  redirect("/dashboard");
 }

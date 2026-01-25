@@ -1,11 +1,180 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { SidebarButton } from './SidebarButton';
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { SidebarButton } from "./SidebarButton";
+
+import { getTodayCashBox, getCashBoxSummary } from "@/lib/api/cash-boxes";
+import { getKeys } from "@/lib/api/keys";
+import { getEntranceAccessCards } from "@/lib/api/entrance-access-cards";
+
+function money(n: number) {
+  return (n ?? 0).toLocaleString("es-EC", { style: "currency", currency: "USD" });
+}
+
+function isTodayISO(dateLike?: string) {
+  if (!dateLike) return false;
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm">
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="mt-1 text-xl font-semibold text-gray-900 leading-none">{value}</div>
+    </div>
+  );
+}
+
+function CashStatusCard({
+  statusText,
+  subText,
+  incomeText,
+}: {
+  statusText: string;
+  subText: string;
+  incomeText: string;
+}) {
+  return (
+    <div className="mx-4 mt-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className="text-sm font-semibold text-emerald-900">Estado de Caja</div>
+      <div className="mt-1 text-sm text-emerald-900">{statusText}</div>
+      <div className="mt-1 text-xs text-emerald-800">{subText}</div>
+      <div className="mt-2 text-xs text-emerald-800">{incomeText}</div>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Sidebar KPIs
+  const [cashStatus, setCashStatus] = useState<{
+    statusText: string;
+    subText: string;
+    incomeText: string;
+    pending: number;
+  }>({
+    statusText: "Cargando…",
+    subText: "",
+    incomeText: "",
+    pending: 0,
+  });
+
+  const [peopleToday, setPeopleToday] = useState(0);
+  const [keysAvailable, setKeysAvailable] = useState(0);
+
+  async function loadSidebarKpis() {
+    // 1) Caja
+    try {
+      const cashBox = await getTodayCashBox();
+      if (!cashBox) {
+        setCashStatus({
+          statusText: "Cerrada — sin caja hoy",
+          subText: "",
+          incomeText: "Ingresos: $0.00",
+          pending: 0,
+        });
+      } else {
+        // Nota: tu type mapping convierte status a 'Open' | 'Closed'
+        const isOpen = (cashBox as any)?.status === "Open";
+        const openedAt = (cashBox as any)?.openedAt ?? (cashBox as any)?.OpenedAt;
+        const dateLabel = openedAt ? new Date(openedAt).toLocaleDateString("es-EC") : new Date().toLocaleDateString("es-EC");
+
+        let pending = 0;
+        let income = 0;
+
+        try {
+          const summary = await getCashBoxSummary((cashBox as any).id ?? (cashBox as any).Id);
+          pending = summary?.openTransactions ?? 0;
+          // ingreso: usa totalPayments si existe (más real para caja)
+          income = summary?.totalPayments ?? 0;
+        } catch {
+          pending = 0;
+          income = 0;
+        }
+
+        setCashStatus({
+          statusText: `${isOpen ? "Abierta" : "Cerrada"} — ${dateLabel}`,
+          subText: isOpen ? "Operando" : "Sin operación",
+          incomeText: `Ingresos: ${money(income)}`,
+          pending,
+        });
+      }
+    } catch {
+      setCashStatus({
+        statusText: "Caja: error",
+        subText: "No se pudo cargar",
+        incomeText: "Ingresos: $0.00",
+        pending: 0,
+      });
+    }
+
+    // 2) Llaves
+    try {
+      const keys = await getKeys();
+      const available = (keys ?? []).filter((k: any) => {
+        const st = (k?.status ?? "").toString().toLowerCase();
+        // fallback flexible
+        return k?.isAvailable === true || st === "available" || st === "libre";
+      }).length;
+      setKeysAvailable(available);
+    } catch {
+      setKeysAvailable(0);
+    }
+
+    // 3) Personas (Entradas/pases por día) -> suma Qty del día
+    try {
+      const cards = await getEntranceAccessCards();
+      const today = (cards ?? []).filter((c: any) => {
+        // soporta distintos campos
+        if (typeof c?.entranceDate === "string") return isTodayISO(c.entranceDate);
+        if (typeof c?.createdAt === "string") return isTodayISO(c.createdAt);
+        if (typeof c?.entryTime === "string") return isTodayISO(c.entryTime);
+        return false;
+      });
+
+      const sumQty = today.reduce((acc: number, c: any) => {
+        const q = Number(c?.qty ?? c?.Qty ?? 1);
+        return acc + (Number.isFinite(q) ? q : 1);
+      }, 0);
+
+      setPeopleToday(sumQty);
+    } catch {
+      setPeopleToday(0);
+    }
+  }
+
+  useEffect(() => {
+    loadSidebarKpis();
+
+    // refresco ligero
+    const t = setInterval(loadSidebarKpis, 15_000);
+
+    // realtime cross-modules
+    const ch = new BroadcastChannel("zs-events");
+    ch.onmessage = () => loadSidebarKpis();
+
+    return () => {
+      clearInterval(t);
+      ch.close();
+    };
+  }, []);
+
+  const pending = useMemo(() => cashStatus.pending ?? 0, [cashStatus]);
 
   return (
     <>
@@ -31,9 +200,9 @@ export function Sidebar() {
       {/* Sidebar */}
       <nav
         className={`
-          fixed top-0 left-0 z-50 h-full w-[70vw] max-w-[280px] bg-white border-r border-gray-200
+          fixed top-0 left-0 z-50 h-full w-[70vw] max-w-[320px] bg-white border-r border-gray-200
           transform transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:w-[20vw]
         `}
       >
@@ -51,15 +220,31 @@ export function Sidebar() {
         {/* Logo */}
         <div className="p-4 pt-16 md:pt-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500 text-white font-bold">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500 text-white font-bold">
               Z
             </div>
-            <h1 className="font-semibold text-gray-900">Zero Stress</h1>
+            <div className="leading-tight">
+              <div className="font-semibold text-gray-900">Zero Stress</div>
+              <div className="text-xs text-gray-500">Panel Único</div>
+            </div>
           </div>
         </div>
 
+        {/* Indicadores (como la foto) */}
+        <CashStatusCard
+          statusText={cashStatus.statusText}
+          subText={cashStatus.subText}
+          incomeText={cashStatus.incomeText}
+        />
+
+        <div className="mx-4 mt-3 grid grid-cols-3 gap-3">
+          <MiniStat label="Personas" value={peopleToday} />
+          <MiniStat label="Llaves" value={keysAvailable} />
+          <MiniStat label="Pend." value={pending} />
+        </div>
+
         {/* Navigation */}
-        <nav className="mt-4 px-4 space-y-1">
+        <nav className="mt-6 px-4 space-y-1">
           <SidebarButton href="/dashboard">Dashboard</SidebarButton>
 
           {/* FACTURACIÓN (DESPLEGABLE) */}
@@ -85,22 +270,22 @@ export function Sidebar() {
 ================================ */
 function FacturacionGroup() {
   const pathname = usePathname();
-  const isActive = pathname.startsWith('/facturacion');
+  const isActive = pathname.startsWith("/facturacion");
   const [open, setOpen] = useState(isActive);
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={() => setOpen((v) => !v)}
         className={`
           w-full flex items-center justify-between px-4 py-2 rounded-md
-          ${isActive ? 'bg-blue-500 text-white' : 'text-gray-700 hover:bg-gray-100'}
+          ${isActive ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-100"}
         `}
       >
         <span className="font-medium">Facturación</span>
         <svg
-          className={`w-4 h-4 transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
+          className={`w-4 h-4 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -112,17 +297,20 @@ function FacturacionGroup() {
       <div
         className={`
           overflow-hidden transition-all duration-300 ease-in-out
-          ${open ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}
+          ${open ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}
         `}
       >
-        <div className="mt-1 ml-4 border-l border-gray-200 pl-3 space-y-1
-                        transform transition-all duration-300
-                        ${open ? 'translate-y-0' : '-translate-y-2'}">
+        <div
+          className={`
+            mt-1 ml-4 border-l border-gray-200 pl-3 space-y-1
+            transform transition-all duration-300
+            ${open ? "translate-y-0" : "-translate-y-2"}
+          `}
+        >
           <SidebarButton href="/facturacion/pos">Punto de Venta</SidebarButton>
           <SidebarButton href="/facturacion/caja-diaria">Caja Diaria</SidebarButton>
         </div>
       </div>
-
     </div>
   );
 }
