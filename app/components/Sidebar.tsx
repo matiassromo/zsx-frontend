@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { SidebarButton } from "./SidebarButton";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 import { getTodayCashBox, getCashBoxSummary } from "@/lib/api/cash-boxes";
 import { getKeys } from "@/lib/api/keys";
@@ -89,6 +90,7 @@ function CashStatusCard({
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   // Sidebar KPIs
   const [cashStatus, setCashStatus] = useState<{
@@ -300,6 +302,39 @@ export function Sidebar() {
           <SidebarButton href="/products">Productos</SidebarButton>
           <SidebarButton href="/access-cards">Tarjetas de Pases</SidebarButton>
         </nav>
+
+        {/* User info and logout - pushed to bottom */}
+        <div className="mt-auto border-t border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
+                {user?.username?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <span className="text-sm font-medium text-gray-700 truncate max-w-[100px]">
+                {user?.username || "Usuario"}
+              </span>
+            </div>
+            <button
+              onClick={logout}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              title="Cerrar sesion"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
       </nav>
     </>
   );

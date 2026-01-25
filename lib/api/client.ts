@@ -1,4 +1,6 @@
 import { emitZsEvent } from "@/lib/events";
+import { getStoredTokens, clearAuth, getStoredUser, isTokenExpired, storeAuth } from "@/lib/auth/storage";
+import { refreshToken as apiRefreshToken } from "@/lib/auth/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058";
 
@@ -18,6 +20,40 @@ type RequestOptions = {
   body?: unknown;
   params?: Record<string, string | undefined>;
 };
+
+async function getValidToken(): Promise<string | null> {
+  const tokens = getStoredTokens();
+  const storedUser = getStoredUser();
+
+  if (!tokens || !storedUser) {
+    return null;
+  }
+
+  // Check if token is expired and refresh if needed
+  if (isTokenExpired(storedUser.expiresAt)) {
+    try {
+      const response = await apiRefreshToken({
+        token: tokens.token,
+        refreshToken: tokens.refreshToken,
+      });
+
+      storeAuth(response.token, response.refreshToken, {
+        username: response.username,
+        roles: response.roles,
+        expiresAt: response.expiresAt,
+      });
+
+      return response.token;
+    } catch {
+      // Refresh failed
+      clearAuth();
+      emitZsEvent({ type: "auth:unauthorized", at: Date.now() });
+      return null;
+    }
+  }
+
+  return tokens.token;
+}
 
 export async function apiClient<T>(
   endpoint: string,
@@ -44,6 +80,12 @@ export async function apiClient<T>(
     "Content-Type": "application/json",
   };
 
+  // Add auth header if token exists
+  const token = await getValidToken();
+  if (token) {
+    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+  }
+
   const config: RequestInit = {
     method,
     headers,
@@ -54,6 +96,13 @@ export async function apiClient<T>(
   }
 
   const response = await fetch(url, config);
+
+  // Handle 401 Unauthorized - clear auth and emit event
+  if (response.status === 401) {
+    clearAuth();
+    emitZsEvent({ type: "auth:unauthorized", at: Date.now() });
+    throw new ApiError(response.status, response.statusText, "Unauthorized");
+  }
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");

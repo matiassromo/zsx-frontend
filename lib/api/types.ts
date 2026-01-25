@@ -2,6 +2,31 @@
 export type DocumentType = "Cedula" | "Ruc";
 export type PaymentType = "Efectivo" | "Transferencia";
 
+// Auth types
+export interface LoginRequestDto {
+  username: string;
+  password: string;
+}
+
+export interface RefreshTokenRequestDto {
+  token: string;
+  refreshToken: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  expiresAt: string;
+  username: string;
+  roles: string[];
+}
+
+export interface AuthUser {
+  username: string;
+  roles: string[];
+  expiresAt: Date;
+}
+
 // Request DTOs
 export interface ClientRequestDto {
   name: string;

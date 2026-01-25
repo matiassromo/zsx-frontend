@@ -1,7 +1,8 @@
 // src/lib/events.ts
 type ZsEvent =
   | { type: "api:mutated"; path?: string; method?: string; at: number }
-  | { type: "pos:mutated"; at: number };
+  | { type: "pos:mutated"; at: number }
+  | { type: "auth:unauthorized"; at: number };
 
 const CHANNEL = "zs-events";
 

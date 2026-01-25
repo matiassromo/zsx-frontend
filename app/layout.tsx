@@ -1,6 +1,7 @@
 import '@/app/globals.css'
-import { Sidebar } from '@/app/components/Sidebar'
 import { Toaster } from 'react-hot-toast'
+import { AuthProvider } from '@/app/providers/AuthProvider'
+import { AuthenticatedLayout } from '@/app/components/AuthenticatedLayout'
 
 export default function RootLayout({
   children,
@@ -11,13 +12,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Toaster position="top-right" />
-        <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <Sidebar />
-
-          {/* Main content area */}
-          <main className="flex-1 p-4 pt-16 md:pt-4 md:ml-[20vw]">{children}</main>
-        </div>
+        <AuthProvider>
+          <AuthenticatedLayout>{children}</AuthenticatedLayout>
+        </AuthProvider>
       </body>
     </html>
   );
