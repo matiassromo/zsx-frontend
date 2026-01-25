@@ -101,6 +101,7 @@ export function Sidebar() {
         <nav className="mt-4 px-4">
           <SidebarButton href="/clientes">Clientes</SidebarButton>
           <SidebarButton href="/bar">Bar</SidebarButton>
+          <SidebarButton href="/lockers">Lockers</SidebarButton>
         </nav>
       </nav>
     </>

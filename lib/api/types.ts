@@ -177,6 +177,7 @@ export interface Key {
   id: string;
   keyCode: string;
   lastAssignedTo?: string | null;
+  lastAssignedClient?: Client | null;
   lastAssignedAt?: string | null;
   available: boolean;
   notes?: string | null;
