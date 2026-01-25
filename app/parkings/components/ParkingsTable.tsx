@@ -1,6 +1,6 @@
 'use client';
 
-import { formatCurrency } from '@/app/caja-diaria/utils/formatCurrency';
+import { formatCurrency } from '@/app/facturacion/caja-diaria/utils/formatCurrency';
 import type { ParkingWithTransaction } from '../hooks/useParkings';
 
 interface ParkingsTableProps {

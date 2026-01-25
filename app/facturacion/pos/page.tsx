@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import InfoBar from '@/app/components/InfoBar';
-import { useCashBox } from '@/app/caja-diaria/hooks/useCashBox';
+import { useCashBox } from '@/app/facturacion/caja-diaria/hooks/useCashBox';
 import { usePosTransactions } from './hooks/usePosTransactions';
 import { useTransactionDetail } from './hooks/useTransactionDetail';
 import { CashBoxStatusPanel } from './components/CashBoxStatusPanel';
@@ -54,7 +54,7 @@ export default function PosPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <p className="text-sm font-medium text-yellow-800">
-              No hay caja abierta. Abre una caja en <a href="/caja-diaria" className="underline hover:no-underline">Caja Diaria</a> para empezar a trabajar.
+              No hay caja abierta. Abre una caja en <a href="/facturacion/caja-diaria" className="underline hover:no-underline">Caja Diaria</a> para empezar a trabajar.
             </p>
           </div>
         </div>

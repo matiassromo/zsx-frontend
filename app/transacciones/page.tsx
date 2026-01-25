@@ -9,7 +9,7 @@ import { TransactionFormModal } from './components/TransactionFormModal';
 import { CloseTransactionDialog } from './components/CloseTransactionDialog';
 import { DeleteTransactionDialog } from './components/DeleteTransactionDialog';
 import { useTransactions } from './hooks/useTransactions';
-import { useCashBox } from '@/app/caja-diaria/hooks/useCashBox';
+import { useCashBox } from '@/app/facturacion/caja-diaria/hooks/useCashBox';
 import type { Transaction } from '@/lib/api/types';
 
 export default function TransaccionesPage() {

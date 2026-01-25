@@ -8,7 +8,7 @@ import { Input } from '@/app/components/ui/Input';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
 import { TransactionSearchCombobox } from '@/app/components/ui/TransactionSearchCombobox';
 import { useBarProducts } from '@/app/products/hooks/useBarProducts';
-import { formatCurrency } from '@/app/caja-diaria/utils/formatCurrency';
+import { formatCurrency } from '@/app/facturacion/caja-diaria/utils/formatCurrency';
 import {
   createBarOrder,
   createBarOrderDetail,
