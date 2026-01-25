@@ -1,8 +1,8 @@
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-PY', {
+  return new Intl.NumberFormat('es-ES', {
     style: 'currency',
-    currency: 'PYG',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }

@@ -104,6 +104,7 @@ export function Sidebar() {
           <SidebarButton href="/clientes">Clientes</SidebarButton>
           <SidebarButton href="/bar-orders">Bar</SidebarButton>
           <SidebarButton href="/parkings">Parqueos</SidebarButton>
+          <SidebarButton href="/entrance-transaction">Entradas</SidebarButton>
           <SidebarButton href="/lockers">Lockers</SidebarButton>
           <SidebarButton href="/products">Productos</SidebarButton>
           <SidebarButton href="/access-cards">Tarjetas de Pases</SidebarButton>
