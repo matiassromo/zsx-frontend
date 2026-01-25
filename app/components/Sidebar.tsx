@@ -99,6 +99,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="mt-4 px-4">
+          <SidebarButton href="/pos">Punto de Venta</SidebarButton>
           <SidebarButton href="/caja-diaria">Caja Diaria</SidebarButton>
           <SidebarButton href="/transacciones">Transacciones</SidebarButton>
           <SidebarButton href="/payments">Pagos</SidebarButton>

@@ -16,7 +16,7 @@ interface ReleaseKeyDialogProps {
 export function ReleaseKeyDialog({ keyData, isOpen, onClose, onSuccess }: ReleaseKeyDialogProps) {
   const [isReleasing, setIsReleasing] = useState(false);
 
-  const clientName = keyData?.lastAssignedClient?.name || 'Desconocido';
+  const clientName = keyData?.transaction?.client?.name || 'Desconocido';
 
   const handleRelease = async () => {
     if (!keyData) return;

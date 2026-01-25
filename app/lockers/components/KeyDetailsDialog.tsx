@@ -25,7 +25,7 @@ function formatDateTime(dateString: string | null | undefined): string {
 export function KeyDetailsDialog({ keyData, isOpen, onClose }: KeyDetailsDialogProps) {
   if (!keyData) return null;
 
-  const lastClientName = keyData.lastAssignedClient?.name || 'N/A';
+  const lastClientName = keyData.transaction?.client?.name || 'N/A';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Llave ${keyData.keyCode}`} size="sm">

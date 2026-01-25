@@ -59,7 +59,7 @@ export interface AccessCardRequestDto {
 }
 
 export interface KeyRequestDto {
-  lastAssignedTo?: string | null;
+  transactionId?: string | null;
   available?: boolean;
   notes?: string | null;
   lastAssignedAt?: string | null;
@@ -177,8 +177,8 @@ export interface AccessCard extends TransactionItem {
 export interface Key {
   id: string;
   keyCode: string;
-  lastAssignedTo?: string | null;
-  lastAssignedClient?: Client | null;
+  transactionId?: string | null;
+  transaction?: Transaction | null;
   lastAssignedAt?: string | null;
   available: boolean;
   notes?: string | null;
@@ -205,4 +205,17 @@ export interface EntranceAccessCard {
   entranceDate: string;
   entranceEntryTime: string;
   entranceExitTime?: string | null;
+}
+
+// Transaction Detail (for POS view)
+export interface TransactionDetail {
+  transaction: Transaction;
+  entrances: EntranceTransaction[];
+  parkings: Parking[];
+  barOrders: BarOrder[];
+  accessCards: AccessCard[];
+  keys: Key[];
+  totalCharges: number;
+  totalPayments: number;
+  pendingBalance: number;
 }

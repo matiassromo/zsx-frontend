@@ -9,7 +9,7 @@ interface KeyCardProps {
 
 export function KeyCard({ keyData, onClick }: KeyCardProps) {
   const isAvailable = keyData.available;
-  const clientName = keyData.lastAssignedClient?.name || 'Desconocido';
+  const clientName = keyData.transaction?.client?.name || 'Ocupada';
 
   return (
     <button

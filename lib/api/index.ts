@@ -49,6 +49,7 @@ export {
 export {
   getTransactions,
   getTransaction,
+  getTransactionDetail,
   createTransaction,
   updateTransaction,
   closeTransaction,

@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { Transaction, TransactionRequestDto } from "./types";
+import type { Transaction, TransactionRequestDto, TransactionDetail } from "./types";
 
 export async function getTransactions(cashBoxId?: string): Promise<Transaction[]> {
   return apiClient<Transaction[]>("/api/Transactions", {
@@ -40,4 +40,8 @@ export async function deleteTransaction(id: string): Promise<void> {
   return apiClient<void>(`/api/Transactions/${id}`, {
     method: "DELETE",
   });
+}
+
+export async function getTransactionDetail(id: string): Promise<TransactionDetail> {
+  return apiClient<TransactionDetail>(`/api/Transactions/${id}/detail`);
 }
