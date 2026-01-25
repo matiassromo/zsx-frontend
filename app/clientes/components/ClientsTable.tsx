@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import type { Client } from '@/lib/api/types';
 
 interface ClientsTableProps {
@@ -35,16 +36,46 @@ function TableSkeleton() {
   );
 }
 
+function normalize(s: unknown) {
+  return String(s ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
 export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTableProps) {
-  if (!isLoading && clients.length === 0) {
+  const [query, setQuery] = useState('');
+
+  const filteredClients = useMemo(() => {
+    if (!query) return clients;
+
+    const q = normalize(query);
+
+    return clients.filter((c) => {
+      const haystack = [
+        c.name,
+        c.documentType,
+        c.documentNumber,
+        c.email,
+        // si tienes phone / address en Client, puedes agregarlos aquí
+        // c.phone,
+        // c.address,
+      ]
+        .map(normalize)
+        .join(' ');
+
+      return haystack.includes(q);
+    });
+  }, [clients, query]);
+
+  const showEmptyAll = !isLoading && clients.length === 0;
+  const showEmptyFiltered = !isLoading && clients.length > 0 && filteredClients.length === 0 && query.trim();
+
+  if (showEmptyAll) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-        <svg
-          className="mx-auto h-12 w-12 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -59,80 +90,146 @@ export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTa
   }
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Nombre
-            </th>
-            <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Tipo Doc.
-            </th>
-            <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Documento
-            </th>
-            <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Email
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Acciones
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {isLoading ? (
-            <TableSkeleton />
-          ) : (
-            clients.map((client) => (
-              <tr key={client.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">{client.name}</td>
-                <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
-                  {client.documentType || '-'}
-                </td>
-                <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
-                  {client.documentNumber || '-'}
-                </td>
-                <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">
-                  {client.email || '-'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => onEdit(client)}
-                      className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
-                      aria-label={`Editar ${client.name}`}
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => onDelete(client)}
-                      className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                      aria-label={`Eliminar ${client.name}`}
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
+    <div className="space-y-3">
+      {/* Buscador */}
+      <div className="bg-white rounded-lg border border-gray-200 px-3 py-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35m1.6-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nombre, documento o email..."
+              className="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+            />
+
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                aria-label="Limpiar búsqueda"
+                title="Limpiar"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {!isLoading && (
+            <div className="text-xs text-gray-500 whitespace-nowrap">
+              {filteredClients.length} / {clients.length}
+            </div>
           )}
-        </tbody>
-      </table>
+        </div>
+
+        {showEmptyFiltered && (
+          <div className="mt-2 text-sm text-gray-600 flex items-center justify-between">
+            <span>No hay resultados para “{query.trim()}”.</span>
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Limpiar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Tabla */}
+      <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nombre
+              </th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipo Doc.
+              </th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Documento
+              </th>
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              <TableSkeleton />
+            ) : (
+              filteredClients.map((client) => (
+                <tr key={client.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{client.name}</td>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
+                    {client.documentType || '-'}
+                  </td>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
+                    {client.documentNumber || '-'}
+                  </td>
+                  <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">
+                    {client.email || '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => onEdit(client)}
+                        className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                        aria-label={`Editar ${client.name}`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+
+                      <button
+                        onClick={() => onDelete(client)}
+                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        aria-label={`Eliminar ${client.name}`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
