@@ -27,7 +27,6 @@ export function AssignKeyModal({ isOpen, onClose, transactionId, onSuccess }: As
 
   useEffect(() => {
     if (isOpen) loadKeys();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const loadKeys = async () => {

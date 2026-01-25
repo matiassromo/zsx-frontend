@@ -1,28 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { SidebarButton } from "./SidebarButton";
 
 import { getTodayCashBox, getCashBoxSummary } from "@/lib/api/cash-boxes";
 import { getKeys } from "@/lib/api/keys";
 import { getEntranceTransactions } from "@/lib/api/entrance-transactions";
-
+import type { Key, EntranceTransaction } from "@/lib/api/types";
 
 function money(n: number) {
   return (n ?? 0).toLocaleString("es-EC", { style: "currency", currency: "USD" });
-}
-
-function isTodayISO(dateLike?: string) {
-  if (!dateLike) return false;
-  const d = new Date(dateLike);
-  if (Number.isNaN(d.getTime())) return false;
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
 }
 
 function isTodayFromDateTime(dateLike?: string) {
@@ -35,6 +23,33 @@ function isTodayFromDateTime(dateLike?: string) {
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate()
   );
+}
+
+// External store for KPI refresh triggers
+let kpiVersion = 0;
+const kpiListeners = new Set<() => void>();
+
+function subscribeToKpiRefresh(callback: () => void) {
+  kpiListeners.add(callback);
+  // Schedule initial load
+  const initialTimeout = setTimeout(() => {
+    kpiVersion++;
+    kpiListeners.forEach((l) => l());
+  }, 0);
+  // Set up periodic refresh
+  const interval = setInterval(() => {
+    kpiVersion++;
+    kpiListeners.forEach((l) => l());
+  }, 15_000);
+  return () => {
+    clearTimeout(initialTimeout);
+    clearInterval(interval);
+    kpiListeners.delete(callback);
+  };
+}
+
+function getKpiSnapshot() {
+  return kpiVersion;
 }
 
 
@@ -92,7 +107,7 @@ export function Sidebar() {
   const [keysStats, setKeysStats] = useState({ available: 0, total: 32 });
 
 
-  async function loadSidebarKpis() {
+  const loadSidebarKpis = useCallback(async () => {
     // 1) Caja
     try {
       const cashBox = await getTodayCashBox();
@@ -104,16 +119,15 @@ export function Sidebar() {
           pending: 0,
         });
       } else {
-        // Nota: tu type mapping convierte status a 'Open' | 'Closed'
-        const isOpen = (cashBox as any)?.status === "Open";
-        const openedAt = (cashBox as any)?.openedAt ?? (cashBox as any)?.OpenedAt;
+        const isOpen = cashBox.status === "Open";
+        const openedAt = cashBox.openedAt;
         const dateLabel = openedAt ? new Date(openedAt).toLocaleDateString("es-EC") : new Date().toLocaleDateString("es-EC");
 
         let pending = 0;
         let income = 0;
 
         try {
-          const summary = await getCashBoxSummary((cashBox as any).id ?? (cashBox as any).Id);
+          const summary = await getCashBoxSummary(cashBox.id);
           pending = summary?.openTransactions ?? 0;
           // ingreso: usa totalPayments si existe (más real para caja)
           income = summary?.totalPayments ?? 0;
@@ -142,9 +156,9 @@ export function Sidebar() {
 // 2) Llaves
     try {
       const keys = await getKeys();
-      const list = keys ?? [];
+      const list: Key[] = keys ?? [];
       const total = list.length || 32;
-      const available = list.filter((k: any) => k?.available === true).length;
+      const available = list.filter((k) => k.available === true).length;
 
       setKeysStats({ available, total });
     } catch {
@@ -154,48 +168,49 @@ export function Sidebar() {
 
     // 3) Personas (Entradas/pases por día) -> suma Qty del día
     // 3) Personas (día) = suma adultos + niños + tercera edad + discapacidad de entradas de HOY
-try {
-    const entrances = await getEntranceTransactions();
+    try {
+      const entrances = await getEntranceTransactions();
 
-    const today = (entrances ?? []).filter((e: any) => {
-      // normalmente EntranceTransaction tiene entryTime
-      if (typeof e?.entryTime === "string") return isTodayFromDateTime(e.entryTime);
-      // fallback por si tu backend manda createdAt
-      if (typeof e?.createdAt === "string") return isTodayFromDateTime(e.createdAt);
-      return false;
-    });
+      const today = (entrances ?? []).filter((e: EntranceTransaction) => {
+        // normalmente EntranceTransaction tiene entryTime
+        if (typeof e?.entryTime === "string") return isTodayFromDateTime(e.entryTime);
+        // fallback por si tu backend manda createdAt
+        if (typeof e?.createdAt === "string") return isTodayFromDateTime(e.createdAt);
+        return false;
+      });
 
-    const people = today.reduce((acc: number, e: any) => {
-      const a = Number(e?.numberAdults ?? 0);
-      const c = Number(e?.numberChildren ?? 0);
-      const s = Number(e?.numberSeniors ?? 0);
-      const d = Number(e?.numberDisabled ?? 0);
-      return acc + (Number.isFinite(a) ? a : 0) + (Number.isFinite(c) ? c : 0) + (Number.isFinite(s) ? s : 0) + (Number.isFinite(d) ? d : 0);
-    }, 0);
+      const people = today.reduce((acc: number, e: EntranceTransaction) => {
+        const a = Number(e?.numberAdults ?? 0);
+        const c = Number(e?.numberChildren ?? 0);
+        const s = Number(e?.numberSeniors ?? 0);
+        const d = Number(e?.numberDisabled ?? 0);
+        return acc + (Number.isFinite(a) ? a : 0) + (Number.isFinite(c) ? c : 0) + (Number.isFinite(s) ? s : 0) + (Number.isFinite(d) ? d : 0);
+      }, 0);
 
-    setPeopleToday(people);
-  } catch {
-    setPeopleToday(0);
-  }
-}
+      setPeopleToday(people);
+    } catch {
+      setPeopleToday(0);
+    }
+  }, []);
 
-
+  // Use external store to trigger refreshes without synchronous setState in effect
+  const kpiTrigger = useSyncExternalStore(subscribeToKpiRefresh, getKpiSnapshot, () => 0);
 
   useEffect(() => {
+    // Initial load and periodic refresh triggered by external store change
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSidebarKpis();
+  }, [kpiTrigger, loadSidebarKpis]);
 
-    // refresco ligero
-    const t = setInterval(loadSidebarKpis, 15_000);
-
+  useEffect(() => {
     // realtime cross-modules
     const ch = new BroadcastChannel("zs-events");
     ch.onmessage = () => loadSidebarKpis();
 
     return () => {
-      clearInterval(t);
       ch.close();
     };
-  }, []);
+  }, [loadSidebarKpis]);
 
   const pending = useMemo(() => cashStatus.pending ?? 0, [cashStatus]);
 

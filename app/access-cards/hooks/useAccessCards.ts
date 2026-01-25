@@ -25,7 +25,7 @@ interface UseAccessCardsReturn {
 
 const MAX_PASSES = 10;
 
-function entranceSortKey(e: any) {
+function entranceSortKey(e: EntranceAccessCard) {
   // prefer entryTime if backend includes it; fallback to entranceDate
   return e?.entryTime
     ? new Date(e.entryTime).getTime()
@@ -73,8 +73,8 @@ export function useAccessCards(): UseAccessCardsReturn {
         const usedPasses = Math.max(0, MAX_PASSES - remainingPasses);
         const isActive = remainingPasses > 0;
 
-        const sortedEntrances = [...cardEntrances].sort((a: any, b: any) => entranceSortKey(b) - entranceSortKey(a));
-        const lastUsedAt = sortedEntrances.length > 0 ? (sortedEntrances[0] as any).entryTime || sortedEntrances[0].entranceDate : null;
+        const sortedEntrances = [...cardEntrances].sort((a, b) => entranceSortKey(b) - entranceSortKey(a));
+        const lastUsedAt = sortedEntrances.length > 0 ? sortedEntrances[0].entryTime || sortedEntrances[0].entranceDate : null;
 
         const owner = card.transactionId ? transactionClientMap[card.transactionId] || null : null;
 

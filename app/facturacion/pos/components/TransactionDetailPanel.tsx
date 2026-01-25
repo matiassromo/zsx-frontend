@@ -172,7 +172,7 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         isOpen={isAccessCardModalOpen}
         onClose={() => setIsAccessCardModalOpen(false)}
         transactionId={transaction.id}
-        client={transaction.client as any}
+        client={transaction.client ?? null}
         onSuccess={onRefresh}
       />
 

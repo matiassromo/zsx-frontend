@@ -61,7 +61,7 @@ export function UsePassModal({ isOpen, onClose, onSuccess, accessCard }: UsePass
         entranceEntryTime,
         entranceExitTime: null,
         qty: quantity,
-      } as any);
+      });
 
       toast.success(
         quantity === 1 ? 'Pase utilizado correctamente' : `${quantity} pases utilizados correctamente`

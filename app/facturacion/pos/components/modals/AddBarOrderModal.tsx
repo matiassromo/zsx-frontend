@@ -44,7 +44,7 @@ export function AddBarOrderModal({ isOpen, onClose, transactionId, onSuccess }: 
       setIsLoading(true);
       const data = await getBarProducts();
       setProducts(data.filter((p) => p.qty > 0)); // Only show products with stock
-    } catch (err) {
+    } catch {
       setError('Error al cargar productos');
     } finally {
       setIsLoading(false);

@@ -17,13 +17,6 @@ export default function PosPage() {
   const { detail, isLoading: isDetailLoading, refetch: refetchDetail } = useTransactionDetail(selectedTransactionId);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const handleRefetchAll = async () => {
-    await Promise.all([refetchCashBox(), refetchTransactions()]);
-    if (selectedTransactionId) {
-      await refetchDetail();
-    }
-  };
-
   const handleTransactionCreated = async () => {
     await refetchTransactions();
     await refetchCashBox();

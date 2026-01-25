@@ -2,14 +2,17 @@
 import { getKeys } from "@/lib/api/keys";
 import { getTodayCashBox, getCashBoxSummary } from "@/lib/api/cash-boxes";
 import { getEntranceTransactions } from "@/lib/api/entrance-transactions";
+import type { Key, EntranceTransaction } from "@/lib/api/types";
 
 type KeyLike = { status?: string; gender?: string; isAvailable?: boolean; available?: boolean };
 
-function asArray<T = any>(x: any): T[] {
-  if (Array.isArray(x)) return x as T[];
-  if (Array.isArray(x?.items)) return x.items as T[];
-  if (Array.isArray(x?.data)) return x.data as T[];
-  if (Array.isArray(x?.result)) return x.result as T[];
+function asArray<T>(x: T[] | { items?: T[]; data?: T[]; result?: T[] } | null | undefined): T[] {
+  if (Array.isArray(x)) return x;
+  if (x && typeof x === 'object') {
+    if (Array.isArray((x as { items?: T[] }).items)) return (x as { items: T[] }).items;
+    if (Array.isArray((x as { data?: T[] }).data)) return (x as { data: T[] }).data;
+    if (Array.isArray((x as { result?: T[] }).result)) return (x as { result: T[] }).result;
+  }
   return [];
 }
 
@@ -53,7 +56,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     getEntranceTransactions().catch(() => []),
   ]);
 
-  const keys = asArray<KeyLike>(keysRes);
+  const keys = asArray<Key>(keysRes) as (Key & KeyLike)[];
 
   // ✅ Keys
   const totalKeys = keys.length || 32;
@@ -85,17 +88,16 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   const busy = keys.length ? Math.max(0, keys.length - availableKeys) : 0;
 
   // ✅ Personas (día) = suma adultos + niños + tercera edad + discapacidad de entradas de HOY
-  const entrances = asArray<any>(entrancesRes);
+  const entrances = asArray<EntranceTransaction>(entrancesRes);
 
-  const entrancesToday = entrances.filter((e: any) => {
+  const entrancesToday = entrances.filter((e) => {
     const d =
       toDateMaybe(e?.entryTime) ||
-      toDateMaybe(e?.createdAt) ||
-      toDateMaybe(e?.openedAt);
+      toDateMaybe(e?.createdAt);
     return d ? isToday(d) : false;
   });
 
-  const peopleToday = entrancesToday.reduce((acc: number, e: any) => {
+  const peopleToday = entrancesToday.reduce((acc: number, e) => {
     const a = Number(e?.numberAdults ?? 0);
     const c = Number(e?.numberChildren ?? 0);
     const s = Number(e?.numberSeniors ?? 0);

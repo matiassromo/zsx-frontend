@@ -17,12 +17,9 @@ function normId(v: unknown): string {
 }
 
 function getKeyTransactionId(k: Key): string {
-  const anyK = k as any;
   return (
     normId(k.transactionId) ||
-    normId(anyK.transactionID) ||
     normId(k.transaction?.id) ||
-    normId(anyK.transaction?.id) ||
     ''
   );
 }

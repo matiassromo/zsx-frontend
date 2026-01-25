@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useCallback } from "react";
 import {
   RefreshCcw,
   KeyRound,
@@ -11,8 +11,36 @@ import {
   Wallet,
   Activity,
   Clock,
+  type LucideIcon,
 } from "lucide-react";
 import { getDashboardSnapshot, type DashboardSnapshot } from "@/lib/api/dashboard";
+
+// External store for dashboard refresh triggers
+let dashboardVersion = 0;
+const dashboardListeners = new Set<() => void>();
+
+function subscribeToDashboardRefresh(callback: () => void) {
+  dashboardListeners.add(callback);
+  // Schedule initial load
+  const initialTimeout = setTimeout(() => {
+    dashboardVersion++;
+    dashboardListeners.forEach((l) => l());
+  }, 0);
+  // Set up periodic refresh
+  const interval = setInterval(() => {
+    dashboardVersion++;
+    dashboardListeners.forEach((l) => l());
+  }, 10_000);
+  return () => {
+    clearTimeout(initialTimeout);
+    clearInterval(interval);
+    dashboardListeners.delete(callback);
+  };
+}
+
+function getDashboardRefreshSnapshot() {
+  return dashboardVersion;
+}
 
 function money(n: number) {
   return (n ?? 0).toLocaleString("es-EC", { style: "currency", currency: "USD" });
@@ -28,7 +56,7 @@ function StatCard({
   title: string;
   value: string;
   hint?: string;
-  icon: any;
+  icon: LucideIcon;
   gradient: string;
 }) {
   return (
@@ -70,27 +98,32 @@ export default function DashboardClient() {
   const [data, setData] = useState<DashboardSnapshot | null>(null);
   const [error, setError] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setError("");
       setData(await getDashboardSnapshot());
-    } catch (e: any) {
-      setError(e?.message ?? "Error cargando dashboard");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error cargando dashboard");
     }
-  }
+  }, []);
+
+  // Use external store to trigger refreshes without synchronous setState in effect
+  const refreshTrigger = useSyncExternalStore(subscribeToDashboardRefresh, getDashboardRefreshSnapshot, () => 0);
 
   useEffect(() => {
+    // Initial load and periodic refresh triggered by external store change
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-    const t = setInterval(load, 10_000);
+  }, [refreshTrigger, load]);
 
+  useEffect(() => {
     const ch = new BroadcastChannel("zs-events");
     ch.onmessage = () => load();
 
     return () => {
-      clearInterval(t);
       ch.close();
     };
-  }, []);
+  }, [load]);
 
   const keys = useMemo(() => {
     const total = data?.keys?.total ?? 0;

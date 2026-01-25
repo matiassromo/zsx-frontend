@@ -7,9 +7,9 @@ import type {
   CloseCashBoxRequestDto,
 } from "./types";
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 
-function pick<T = any>(obj: AnyRecord | null | undefined, pascal: string, camel?: string): T {
+function pick<T = unknown>(obj: AnyRecord | null | undefined, pascal: string, camel?: string): T {
   if (!obj) return undefined as T;
   if (obj[pascal] !== undefined) return obj[pascal] as T;
   if (camel && obj[camel] !== undefined) return obj[camel] as T;
@@ -19,7 +19,7 @@ function pick<T = any>(obj: AnyRecord | null | undefined, pascal: string, camel?
   return undefined as T;
 }
 
-function mapCashBoxStatus(v: any): "Open" | "Closed" {
+function mapCashBoxStatus(v: unknown): "Open" | "Closed" {
   // soporta: 0/1, "Open"/"Closed", "open"/"closed"
   if (v === 0 || v === "Open" || v === "open") return "Open";
   if (v === 1 || v === "Closed" || v === "closed") return "Closed";
@@ -29,7 +29,7 @@ function mapCashBoxStatus(v: any): "Open" | "Closed" {
 function mapCashBoxDtoToFront(raw: AnyRecord): CashBox {
   return {
     id: pick<string>(raw, "Id", "id"),
-    status: mapCashBoxStatus(pick<any>(raw, "Status", "status")),
+    status: mapCashBoxStatus(pick<unknown>(raw, "Status", "status")),
     openingBalance: pick<number>(raw, "OpeningBalance", "openingBalance"),
     closingBalance: pick<number | null>(raw, "ClosingBalance", "closingBalance") ?? null,
     openedAt: pick<string>(raw, "OpenedAt", "openedAt"),
@@ -39,7 +39,7 @@ function mapCashBoxDtoToFront(raw: AnyRecord): CashBox {
 }
 
 export async function getTodayCashBox(date?: string): Promise<CashBox | null> {
-  const response = await apiClient<any>("/api/CashBoxes/today", {
+  const response = await apiClient<AnyRecord>("/api/CashBoxes/today", {
     params: date ? { date } : undefined,
   });
 
@@ -48,7 +48,7 @@ export async function getTodayCashBox(date?: string): Promise<CashBox | null> {
 }
 
 export async function getCashBoxesByRange(from?: string, to?: string): Promise<CashBox[]> {
-  const list = await apiClient<any[]>("/api/CashBoxes/range", {
+  const list = await apiClient<AnyRecord[]>("/api/CashBoxes/range", {
     params: { from, to },
   });
 
@@ -63,10 +63,10 @@ export async function getCashBoxTransactions(id: string): Promise<Transaction[]>
 export async function getCashBoxSummary(id?: string): Promise<CashBoxSummary | null> {
   if (!id) return null;
 
-  const response = await apiClient<any>(`/api/CashBoxes/${id}/summary`);
+  const response = await apiClient<AnyRecord>(`/api/CashBoxes/${id}/summary`);
   if (!response) return null;
 
-  const cashBoxRaw = pick<any>(response, "CashBox", "cashBox");
+  const cashBoxRaw = pick<AnyRecord>(response, "CashBox", "cashBox");
   if (!cashBoxRaw) return null;
 
   return {
@@ -81,7 +81,7 @@ export async function getCashBoxSummary(id?: string): Promise<CashBoxSummary | n
 }
 
 export async function openCashBox(data: OpenCashBoxRequestDto): Promise<CashBox> {
-  const response = await apiClient<any>("/api/CashBoxes/open", {
+  const response = await apiClient<AnyRecord>("/api/CashBoxes/open", {
     method: "POST",
     body: data,
   });
@@ -90,7 +90,7 @@ export async function openCashBox(data: OpenCashBoxRequestDto): Promise<CashBox>
 }
 
 export async function closeCashBox(id: string, data: CloseCashBoxRequestDto): Promise<CashBox> {
-  const response = await apiClient<any>(`/api/CashBoxes/${id}/close`, {
+  const response = await apiClient<AnyRecord>(`/api/CashBoxes/${id}/close`, {
     method: "POST",
     body: data,
   });
@@ -99,7 +99,7 @@ export async function closeCashBox(id: string, data: CloseCashBoxRequestDto): Pr
 }
 
 export async function reopenCashBox(id: string): Promise<CashBox> {
-  const response = await apiClient<any>(`/api/CashBoxes/${id}/reopen`, {
+  const response = await apiClient<AnyRecord>(`/api/CashBoxes/${id}/reopen`, {
     method: "POST",
   });
 

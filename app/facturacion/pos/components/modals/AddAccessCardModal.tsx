@@ -8,14 +8,9 @@ import { getAccessCards, createAccessCard } from '@/lib/api/access-cards';
 import { getTransactions } from '@/lib/api/transactions';
 import { createEntranceAccessCard } from '@/lib/api/entrance-access-cards';
 
-type AnyClient = {
-  id?: string;
-  name?: string;
-  documentNumber?: string;
-  email?: string;
-};
+import type { Client, AccessCard } from '@/lib/api/types';
 
-type AnyAccessCard = any;
+type AnyClient = Client | null;
 
 function norm(s: unknown) {
   return String(s ?? '')
@@ -51,6 +46,11 @@ interface AddAccessCardModalProps {
 
 type Mode = 'auto' | 'use_existing' | 'create_new';
 
+interface ExistingCardDisplay extends AccessCard {
+  shortCode?: string;
+  code?: string;
+}
+
 export function AddAccessCardModal({
   isOpen,
   onClose,
@@ -61,7 +61,7 @@ export function AddAccessCardModal({
   const [mode, setMode] = useState<Mode>('auto');
 
   const [isLoadingCard, setIsLoadingCard] = useState(false);
-  const [existingCard, setExistingCard] = useState<AnyAccessCard | null>(null);
+  const [existingCard, setExistingCard] = useState<ExistingCardDisplay | null>(null);
 
   const [usesTotal, setUsesTotal] = useState(10);
   const [price, setPrice] = useState(55);
@@ -70,14 +70,12 @@ export function AddAccessCardModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const clientKey = useMemo(
-    () => ({
-      id: client?.id ?? '',
-      name: client?.name ?? '',
-      doc: client?.documentNumber ?? '',
-    }),
-    [client?.id, client?.name, client?.documentNumber]
-  );
+  const clientKey = useMemo(() => {
+    const id = client?.id ?? '';
+    const name = client?.name ?? '';
+    const doc = client?.documentNumber ?? '';
+    return { id, name, doc };
+  }, [client]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -93,21 +91,20 @@ export function AddAccessCardModal({
         const targetClientId = clientKey.id ? String(clientKey.id) : '';
         const targetDoc = norm(clientKey.doc);
 
-        const txById = new Map<string, any>();
+        const txById = new Map<string, typeof transactions[number]>();
         for (const t of transactions) txById.set(String(t.id), t);
 
-        const found =
-          cards.find((c: any) => {
-            const tx = c?.transactionId ? txById.get(String(c.transactionId)) : null;
-            const txClientId = tx?.client?.id
-              ? String(tx.client.id)
-              : tx?.clientId
-              ? String(tx.clientId)
-              : '';
-            const txDoc = norm(tx?.client?.documentNumber);
+        const found = cards.find((c) => {
+          const tx = c?.transactionId ? txById.get(String(c.transactionId)) : null;
+          const txClientId = tx?.client?.id
+            ? String(tx.client.id)
+            : tx?.clientId
+            ? String(tx.clientId)
+            : '';
+          const txDoc = norm(tx?.client?.documentNumber ?? '');
 
-            return (targetClientId && txClientId === targetClientId) || (targetDoc && txDoc === targetDoc);
-          }) || null;
+          return (targetClientId && txClientId === targetClientId) || (targetDoc && txDoc === targetDoc);
+        }) || null;
 
         if (found) {
           setExistingCard(found);
@@ -156,7 +153,7 @@ export function AddAccessCardModal({
       entranceEntryTime: nowTimeOnly(),
       entranceExitTime: null,
       qty,
-    } as any);
+    });
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -185,7 +182,7 @@ export function AddAccessCardModal({
           transactionId,
           uses: usesTotal,
           total: price,
-        } as any);
+        });
 
         if (usesToConsume > 0 && created?.id) {
           await consumePasses(created.id, usesToConsume);

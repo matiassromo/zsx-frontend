@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 
 interface InfoBarProps {
   title: string;
@@ -17,18 +17,22 @@ function formatDateTime(date: Date): string {
   });
 }
 
+function subscribeToTime(callback: () => void) {
+  const interval = setInterval(callback, 60000);
+  return () => clearInterval(interval);
+}
+
+function getTimeSnapshot() {
+  return new Date().toISOString();
+}
+
+function getServerSnapshot() {
+  return null;
+}
+
 export default function InfoBar({ title }: InfoBarProps) {
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setCurrentTime(new Date());
-
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const timeKey = useSyncExternalStore(subscribeToTime, getTimeSnapshot, getServerSnapshot);
+  const currentTime = timeKey ? new Date(timeKey) : null;
 
   return (
     <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white py-4">
