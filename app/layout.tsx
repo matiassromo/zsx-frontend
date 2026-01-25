@@ -1,5 +1,6 @@
 import '@/app/globals.css'
 import { Sidebar } from '@/app/components/Sidebar'
+import { Toaster } from 'react-hot-toast'
 
 export default function RootLayout({
   children,
@@ -9,6 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Toaster position="top-right" />
         <div className="flex min-h-screen">
           {/* Sidebar */}
           <Sidebar />
