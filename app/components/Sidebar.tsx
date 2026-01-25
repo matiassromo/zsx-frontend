@@ -105,6 +105,7 @@ export function Sidebar() {
           <SidebarButton href="/bar">Bar</SidebarButton>
           <SidebarButton href="/lockers">Lockers</SidebarButton>
           <SidebarButton href="/products">Productos</SidebarButton>
+          <SidebarButton href="/access-cards">Tarjetas de Pases</SidebarButton>
         </nav>
       </nav>
     </>
