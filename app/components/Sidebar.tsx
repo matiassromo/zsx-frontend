@@ -259,6 +259,7 @@ export function Sidebar() {
           </svg>
         </button>
 
+        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
         {/* Logo */}
         <div className="p-4 pt-16 md:pt-4">
           <div className="flex items-center gap-3">
@@ -302,6 +303,7 @@ export function Sidebar() {
           <SidebarButton href="/products">Productos</SidebarButton>
           <SidebarButton href="/access-cards">Tarjetas de Pases</SidebarButton>
         </nav>
+        </div>
 
         {/* User info and logout - pushed to bottom */}
         <div className="mt-auto border-t border-gray-200 p-4">
