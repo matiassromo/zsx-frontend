@@ -26,8 +26,45 @@ export async function getCashBoxTransactions(id: string): Promise<Transaction[]>
   return apiClient<Transaction[]>(`/api/CashBoxes/${id}/transactions`);
 }
 
+interface CashBoxResponse {
+  Id: string;
+  Status: 'Open' | 'Closed';
+  OpeningBalance: number;
+  ClosingBalance?: number | null;
+  OpenedAt: string;
+  ClosedAt?: string | null;
+  Notes?: string | null;
+}
+
+interface CashBoxSummaryResponse {
+  CashBox: CashBoxResponse;
+  TotalCharges: number;
+  TotalPayments: number;
+  Cash: number;
+  Transfer: number;
+  OpenTransactions: number;
+  ClosedTransactions: number;
+}
+
 export async function getCashBoxSummary(id: string): Promise<CashBoxSummary> {
-  return apiClient<CashBoxSummary>(`/api/CashBoxes/${id}/summary`);
+  const response = await apiClient<CashBoxSummaryResponse>(`/api/CashBoxes/${id}/summary`);
+  return {
+    cashBox: {
+      id: response.CashBox.Id,
+      status: response.CashBox.Status,
+      openingBalance: response.CashBox.OpeningBalance,
+      closingBalance: response.CashBox.ClosingBalance,
+      openedAt: response.CashBox.OpenedAt,
+      closedAt: response.CashBox.ClosedAt,
+      notes: response.CashBox.Notes,
+    },
+    totalCharges: response.TotalCharges,
+    totalPayments: response.TotalPayments,
+    cash: response.Cash,
+    transfer: response.Transfer,
+    openTransactions: response.OpenTransactions,
+    closedTransactions: response.ClosedTransactions,
+  };
 }
 
 export async function openCashBox(

@@ -134,11 +134,12 @@ export interface CashBox {
 
 export interface CashBoxSummary {
   cashBox: CashBox;
-  totalTransactions: number;
+  totalCharges: number;
+  totalPayments: number;
+  cash: number;
+  transfer: number;
   openTransactions: number;
   closedTransactions: number;
-  totalPayments: number;
-  paymentsByType: Record<PaymentType, number>;
 }
 
 export interface Transaction {

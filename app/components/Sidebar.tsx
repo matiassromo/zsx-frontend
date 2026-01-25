@@ -99,6 +99,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="mt-4 px-4">
+          <SidebarButton href="/caja-diaria">Caja Diaria</SidebarButton>
           <SidebarButton href="/clientes">Clientes</SidebarButton>
           <SidebarButton href="/bar">Bar</SidebarButton>
           <SidebarButton href="/lockers">Lockers</SidebarButton>

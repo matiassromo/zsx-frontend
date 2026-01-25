@@ -1,0 +1,110 @@
+'use client';
+
+import type { CashBoxSummary } from '@/lib/api/types';
+import { formatCurrency } from '../utils/formatCurrency';
+
+interface CashBoxMetricsProps {
+  summary: CashBoxSummary;
+}
+
+export function CashBoxMetrics({ summary }: CashBoxMetricsProps) {
+  const { cashBox, totalPayments, cash, transfer } = summary;
+  const currentBalance = cashBox.openingBalance + totalPayments;
+
+  return (
+    <div className="space-y-6">
+      {/* Main metrics cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <MetricCard
+          title="Caja Inicial"
+          value={formatCurrency(cashBox.openingBalance)}
+          variant="neutral"
+        />
+        <MetricCard
+          title="Ingresos Totales"
+          value={formatCurrency(totalPayments)}
+          variant="success"
+          prefix="+"
+        />
+        <MetricCard
+          title="Caja Actual"
+          value={formatCurrency(currentBalance)}
+          variant="primary"
+        />
+      </div>
+
+      {/* Payment breakdown */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Desglose de Pagos</h3>
+        <div className="space-y-2">
+          <PaymentRow
+            label="Efectivo"
+            amount={cash ?? 0}
+            icon={
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            }
+          />
+          <PaymentRow
+            label="Transferencia"
+            amount={transfer ?? 0}
+            icon={
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface MetricCardProps {
+  title: string;
+  value: string;
+  variant: 'neutral' | 'success' | 'primary';
+  prefix?: string;
+}
+
+function MetricCard({ title, value, variant, prefix }: MetricCardProps) {
+  const variantStyles = {
+    neutral: 'bg-gray-50 border-gray-200',
+    success: 'bg-green-50 border-green-200',
+    primary: 'bg-blue-50 border-blue-200',
+  };
+
+  const valueStyles = {
+    neutral: 'text-gray-900',
+    success: 'text-green-700',
+    primary: 'text-blue-700',
+  };
+
+  return (
+    <div className={`rounded-lg border p-4 ${variantStyles[variant]}`}>
+      <p className="text-sm text-gray-600 mb-1">{title}</p>
+      <p className={`text-2xl font-bold ${valueStyles[variant]}`}>
+        {prefix}{value}
+      </p>
+    </div>
+  );
+}
+
+interface PaymentRowProps {
+  label: string;
+  amount: number;
+  icon: React.ReactNode;
+}
+
+function PaymentRow({ label, amount, icon }: PaymentRowProps) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+      <div className="flex items-center gap-2 text-gray-600">
+        {icon}
+        <span className="text-sm">{label}</span>
+      </div>
+      <span className="font-medium text-gray-900">{formatCurrency(amount)}</span>
+    </div>
+  );
+}
