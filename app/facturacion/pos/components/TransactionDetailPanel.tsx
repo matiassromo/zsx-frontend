@@ -72,15 +72,24 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
     );
   }
 
-  const { transaction, entrances, parkings, barOrders, accessCards, keys, totalCharges, totalPayments, pendingBalance } = detail;
+  const {
+    transaction,
+    entrances,
+    parkings,
+    barOrders,
+    accessCards,
+    keys,
+    totalCharges,
+    totalPayments,
+    pendingBalance,
+  } = detail;
+
   const isOpen = transaction.status === 'Open';
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
-      {/* Client info */}
       <ClientSection client={transaction.client} />
 
-      {/* Entrance */}
       <EntranceSection
         entrances={entrances}
         isOpen={isOpen}
@@ -88,7 +97,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      {/* Keys */}
       <KeysSection
         keys={keys}
         isOpen={isOpen}
@@ -96,7 +104,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      {/* Parking */}
       <ParkingSection
         parkings={parkings}
         isOpen={isOpen}
@@ -104,7 +111,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      {/* Bar orders */}
       <BarSection
         barOrders={barOrders}
         isOpen={isOpen}
@@ -112,7 +118,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      {/* Access cards */}
       <AccessCardsSection
         accessCards={accessCards}
         isOpen={isOpen}
@@ -120,7 +125,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      {/* Payments */}
       <PaymentsSection
         payments={transaction.payments || []}
         isOpen={isOpen}
@@ -128,7 +132,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      {/* Totals and close button */}
       <TotalsSection
         totalCharges={totalCharges}
         totalPayments={totalPayments}
@@ -137,7 +140,6 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onClose={() => setIsCloseDialogOpen(true)}
       />
 
-      {/* Modals */}
       <AddEntranceModal
         isOpen={isEntranceModalOpen}
         onClose={() => setIsEntranceModalOpen(false)}
@@ -170,6 +172,7 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         isOpen={isAccessCardModalOpen}
         onClose={() => setIsAccessCardModalOpen(false)}
         transactionId={transaction.id}
+        client={transaction.client as any}
         onSuccess={onRefresh}
       />
 

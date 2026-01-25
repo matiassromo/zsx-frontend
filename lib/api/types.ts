@@ -86,6 +86,7 @@ export interface EntranceAccessCardRequestDto {
   entranceDate?: string;
   entranceEntryTime?: string;
   entranceExitTime?: string | null;
+  qty?: number;
 }
 
 // Response types (inferred from backend domain)
@@ -205,6 +206,9 @@ export interface EntranceAccessCard {
   entranceDate: string;
   entranceEntryTime: string;
   entranceExitTime?: string | null;
+  qty?: number; // ✅ NUEVO
+  entryTime?: string; // opcional si lo expones desde backend
+  exitTime?: string | null;
 }
 
 // Transaction Detail (for POS view)

@@ -9,11 +9,16 @@ interface TransactionCardProps {
 }
 
 function formatTime(dateString: string): string {
-  return new Date(dateString).toLocaleTimeString('es-EC', {
+  // Si el backend no manda zona horaria, asumimos UTC
+  const hasTZ = /([zZ]|[+-]\d{2}:\d{2})$/.test(dateString);
+  const normalized = hasTZ ? dateString : `${dateString}Z`;
+
+  return new Date(normalized).toLocaleTimeString('es-EC', {
     hour: '2-digit',
     minute: '2-digit',
   });
 }
+
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-EC', {
