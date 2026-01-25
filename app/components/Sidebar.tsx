@@ -6,7 +6,8 @@ import { SidebarButton } from "./SidebarButton";
 
 import { getTodayCashBox, getCashBoxSummary } from "@/lib/api/cash-boxes";
 import { getKeys } from "@/lib/api/keys";
-import { getEntranceAccessCards } from "@/lib/api/entrance-access-cards";
+import { getEntranceTransactions } from "@/lib/api/entrance-transactions";
+
 
 function money(n: number) {
   return (n ?? 0).toLocaleString("es-EC", { style: "currency", currency: "USD" });
@@ -23,6 +24,19 @@ function isTodayISO(dateLike?: string) {
     d.getDate() === now.getDate()
   );
 }
+
+function isTodayFromDateTime(dateLike?: string) {
+  if (!dateLike) return false;
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
 
 function MiniStat({
   label,
@@ -75,7 +89,8 @@ export function Sidebar() {
   });
 
   const [peopleToday, setPeopleToday] = useState(0);
-  const [keysAvailable, setKeysAvailable] = useState(0);
+  const [keysStats, setKeysStats] = useState({ available: 0, total: 32 });
+
 
   async function loadSidebarKpis() {
     // 1) Caja
@@ -124,39 +139,47 @@ export function Sidebar() {
     }
 
     // 2) Llaves
+// 2) Llaves
     try {
       const keys = await getKeys();
-      const available = (keys ?? []).filter((k: any) => {
-        const st = (k?.status ?? "").toString().toLowerCase();
-        // fallback flexible
-        return k?.isAvailable === true || st === "available" || st === "libre";
-      }).length;
-      setKeysAvailable(available);
+      const list = keys ?? [];
+      const total = list.length || 32;
+      const available = list.filter((k: any) => k?.available === true).length;
+
+      setKeysStats({ available, total });
     } catch {
-      setKeysAvailable(0);
+      setKeysStats({ available: 0, total: 32 });
     }
+
 
     // 3) Personas (Entradas/pases por día) -> suma Qty del día
-    try {
-      const cards = await getEntranceAccessCards();
-      const today = (cards ?? []).filter((c: any) => {
-        // soporta distintos campos
-        if (typeof c?.entranceDate === "string") return isTodayISO(c.entranceDate);
-        if (typeof c?.createdAt === "string") return isTodayISO(c.createdAt);
-        if (typeof c?.entryTime === "string") return isTodayISO(c.entryTime);
-        return false;
-      });
+    // 3) Personas (día) = suma adultos + niños + tercera edad + discapacidad de entradas de HOY
+try {
+    const entrances = await getEntranceTransactions();
 
-      const sumQty = today.reduce((acc: number, c: any) => {
-        const q = Number(c?.qty ?? c?.Qty ?? 1);
-        return acc + (Number.isFinite(q) ? q : 1);
-      }, 0);
+    const today = (entrances ?? []).filter((e: any) => {
+      // normalmente EntranceTransaction tiene entryTime
+      if (typeof e?.entryTime === "string") return isTodayFromDateTime(e.entryTime);
+      // fallback por si tu backend manda createdAt
+      if (typeof e?.createdAt === "string") return isTodayFromDateTime(e.createdAt);
+      return false;
+    });
 
-      setPeopleToday(sumQty);
-    } catch {
-      setPeopleToday(0);
-    }
+    const people = today.reduce((acc: number, e: any) => {
+      const a = Number(e?.numberAdults ?? 0);
+      const c = Number(e?.numberChildren ?? 0);
+      const s = Number(e?.numberSeniors ?? 0);
+      const d = Number(e?.numberDisabled ?? 0);
+      return acc + (Number.isFinite(a) ? a : 0) + (Number.isFinite(c) ? c : 0) + (Number.isFinite(s) ? s : 0) + (Number.isFinite(d) ? d : 0);
+    }, 0);
+
+    setPeopleToday(people);
+  } catch {
+    setPeopleToday(0);
   }
+}
+
+
 
   useEffect(() => {
     loadSidebarKpis();
@@ -200,12 +223,14 @@ export function Sidebar() {
       {/* Sidebar */}
       <nav
         className={`
-          fixed top-0 left-0 z-50 h-full w-[70vw] max-w-[320px] bg-white border-r border-gray-200
+          fixed top-0 left-0 z-50 h-screen w-[70vw] max-w-[320px] bg-white border-r border-gray-200
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:w-[20vw]
+          flex flex-col
         `}
       >
+
         {/* Close button mobile */}
         <button
           onClick={() => setIsOpen(false)}
@@ -239,8 +264,8 @@ export function Sidebar() {
 
         <div className="mx-4 mt-3 grid grid-cols-3 gap-3">
           <MiniStat label="Personas" value={peopleToday} />
-          <MiniStat label="Llaves" value={keysAvailable} />
-          <MiniStat label="Pend." value={pending} />
+          <MiniStat label="Llaves" value={`${keysStats.available}/${keysStats.total}`} />
+          <MiniStat label="Cuentas Activas" value={pending} />
         </div>
 
         {/* Navigation */}

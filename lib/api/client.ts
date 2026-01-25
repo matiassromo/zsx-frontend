@@ -1,3 +1,5 @@
+import { emitZsEvent } from "@/lib/events";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058";
 
 export class ApiError extends Error {
@@ -56,6 +58,16 @@ export async function apiClient<T>(
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     throw new ApiError(response.status, response.statusText, errorText);
+  }
+
+  // ✅ Si fue mutación, notifica a toda la app (Dashboard, Caja, Lockers, etc.)
+  if (method !== "GET") {
+    emitZsEvent({
+      type: "api:mutated",
+      path: endpoint,
+      method,
+      at: Date.now(),
+    });
   }
 
   if (response.status === 204 || response.headers.get("content-length") === "0") {
