@@ -101,6 +101,7 @@ export function Sidebar() {
         <nav className="mt-4 px-4">
           <SidebarButton href="/caja-diaria">Caja Diaria</SidebarButton>
           <SidebarButton href="/transacciones">Transacciones</SidebarButton>
+          <SidebarButton href="/payments">Pagos</SidebarButton>
           <SidebarButton href="/clientes">Clientes</SidebarButton>
           <SidebarButton href="/bar-orders">Bar</SidebarButton>
           <SidebarButton href="/parkings">Parqueos</SidebarButton>
