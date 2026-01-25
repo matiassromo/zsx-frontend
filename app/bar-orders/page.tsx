@@ -121,11 +121,11 @@ function BarOrdersTable({
                 <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">
                   {order.details && order.details.length > 0 ? (
                     <div className="space-y-1">
-                      {order.details.map((detail) => (
-                        <div
-                          key={`${detail.barProductId}-${detail.barOrderId}`}
-                          className="text-xs text-gray-600"
-                        >
+                  {order.details.map((detail, index) => (
+                    <div
+                      key={`${order.id}-${index}`}
+                      className="text-xs text-gray-600"
+                    >
                           {(detail.barProduct?.name || 'Producto').trim()} x{detail.qty}
                         </div>
                       ))}
