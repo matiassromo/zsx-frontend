@@ -178,28 +178,24 @@ export default function DashboardClient() {
           <StatCard
             title="Llaves disponibles"
             value={`${keys.available} / ${keys.total}`}
-            hint={`H: ${keys.men} · M: ${keys.women}`}
             icon={KeyRound}
             gradient="from-blue-50 to-blue-100"
           />
           <StatCard
             title="Personas (día)"
             value={`${data?.people?.today ?? 0}`}
-            hint="Entradas / consumos"
             icon={Users}
             gradient="from-indigo-50 to-indigo-100"
           />
           <StatCard
             title="Cuentas abiertas"
             value={`${data?.pos?.openAccounts ?? 0}`}
-            hint="POS activos"
             icon={Wallet}
             gradient="from-violet-50 to-violet-100"
           />
           <StatCard
             title="Transacciones"
             value={`${data?.money?.txCountToday ?? 0}`}
-            hint="Movimientos del día"
             icon={Activity}
             gradient="from-slate-50 to-slate-100"
           />
@@ -212,21 +208,18 @@ export default function DashboardClient() {
           <StatCard
             title="Ingresos"
             value={money(data?.money?.incomeToday ?? 0)}
-            hint="Pagos recibidos"
             icon={ArrowUpCircle}
             gradient="from-emerald-50 to-emerald-100"
           />
           <StatCard
             title="Egresos"
             value={money(data?.money?.expenseToday ?? 0)}
-            hint="Gastos del día"
             icon={ArrowDownCircle}
             gradient="from-rose-50 to-rose-100"
           />
           <StatCard
             title="Balance"
             value={money(data?.money?.netToday ?? 0)}
-            hint="Ingresos - Egresos"
             icon={DollarSign}
             gradient="from-green-50 to-green-100"
           />

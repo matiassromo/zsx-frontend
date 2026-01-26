@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
-import { Input } from '@/app/components/ui/Input';
+import { NumberStepper } from '@/app/components/ui/NumberStepper';
 import { createEntranceTransaction } from '@/lib/api/entrance-transactions';
 
 interface AddEntranceModalProps {
@@ -32,6 +32,7 @@ export function AddEntranceModal({ isOpen, onClose, transactionId, onSuccess }: 
     try {
       setIsSubmitting(true);
       setError('');
+
       await createEntranceTransaction({
         transactionId,
         entryTime: new Date().toISOString(),
@@ -40,6 +41,7 @@ export function AddEntranceModal({ isOpen, onClose, transactionId, onSuccess }: 
         numberSeniors,
         numberDisabled,
       });
+
       await onSuccess();
       handleClose();
     } catch (err) {
@@ -62,39 +64,37 @@ export function AddEntranceModal({ isOpen, onClose, transactionId, onSuccess }: 
     <Modal isOpen={isOpen} onClose={handleClose} title="Registrar Entrada">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <NumberStepper
             label="Adultos"
-            type="number"
-            min={0}
             value={numberAdults}
-            onChange={(e) => setNumberAdults(parseInt(e.target.value) || 0)}
-          />
-          <Input
-            label="Ninos"
-            type="number"
+            onChange={setNumberAdults}
             min={0}
+            max={99}
+          />
+          <NumberStepper
+            label="Niños"
             value={numberChildren}
-            onChange={(e) => setNumberChildren(parseInt(e.target.value) || 0)}
+            onChange={setNumberChildren}
+            min={0}
+            max={99}
           />
-          <Input
+          <NumberStepper
             label="Tercera Edad"
-            type="number"
-            min={0}
             value={numberSeniors}
-            onChange={(e) => setNumberSeniors(parseInt(e.target.value) || 0)}
-          />
-          <Input
-            label="Discapacitados"
-            type="number"
+            onChange={setNumberSeniors}
             min={0}
+            max={99}
+          />
+          <NumberStepper
+            label="Discapacitados"
             value={numberDisabled}
-            onChange={(e) => setNumberDisabled(parseInt(e.target.value) || 0)}
+            onChange={setNumberDisabled}
+            min={0}
+            max={99}
           />
         </div>
 
-        {error && (
-          <p className="text-sm text-red-600">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex justify-end gap-3">
           <button
