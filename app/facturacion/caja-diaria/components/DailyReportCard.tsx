@@ -7,33 +7,43 @@ interface DailyReportCardProps {
   summary: CashBoxSummary;
 }
 
+const TZ = 'America/Guayaquil';
+
+function normalizeUtc(dateString: string) {
+  // Si el backend no manda zona horaria, asumimos UTC
+  const hasTZ = /([zZ]|[+-]\d{2}:\d{2})$/.test(dateString);
+  return hasTZ ? dateString : `${dateString}Z`;
+}
+
+function formatLongDate(dateString: string) {
+  return new Date(normalizeUtc(dateString)).toLocaleDateString('es-EC', {
+    timeZone: TZ,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function formatTime(dateString: string) {
+  return new Date(normalizeUtc(dateString)).toLocaleTimeString('es-EC', {
+    timeZone: TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function DailyReportCard({ summary }: DailyReportCardProps) {
   const { cashBox, totalPayments, cash, transfer, openTransactions, closedTransactions } = summary;
   const closingBalance = cashBox.closingBalance ?? (cashBox.openingBalance + totalPayments);
   const totalTransactions = openTransactions + closedTransactions;
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
 
   return (
     <div id="daily-report" className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       {/* Header */}
       <div className="bg-gray-800 text-white px-6 py-4">
         <h2 className="text-lg font-semibold">Reporte de Cierre</h2>
-        <p className="text-gray-300 text-sm capitalize">{formatDate(cashBox.openedAt)}</p>
+        <p className="text-gray-300 text-sm capitalize">{formatLongDate(cashBox.openedAt)}</p>
       </div>
 
       {/* Content */}

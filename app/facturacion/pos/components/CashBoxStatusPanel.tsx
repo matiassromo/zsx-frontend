@@ -7,6 +7,13 @@ interface CashBoxStatusPanelProps {
   isLoading: boolean;
 }
 
+const TZ = 'America/Guayaquil';
+
+function normalizeUtc(dateString: string) {
+  const hasTZ = /([zZ]|[+-]\d{2}:\d{2})$/.test(dateString);
+  return hasTZ ? dateString : `${dateString}Z`;
+}
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-EC', {
     style: 'currency',
@@ -15,7 +22,8 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('es-EC', {
+  return new Date(normalizeUtc(dateString)).toLocaleDateString('es-EC', {
+    timeZone: TZ,
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -57,7 +65,6 @@ export function CashBoxStatusPanel({ summary, isLoading }: CashBoxStatusPanelPro
 
   return (
     <div className="space-y-4">
-      {/* Cash box status card */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
           Caja Diaria
@@ -73,12 +80,9 @@ export function CashBoxStatusPanel({ summary, isLoading }: CashBoxStatusPanelPro
             {cashBox.status === 'Open' ? 'Abierta' : 'Cerrada'}
           </span>
         </div>
-        <p className="text-xs text-gray-500">
-          {formatDate(cashBox.openedAt)}
-        </p>
+        <p className="text-xs text-gray-500">{formatDate(cashBox.openedAt)}</p>
       </div>
 
-      {/* Metrics card */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
           Resumen
@@ -99,7 +103,6 @@ export function CashBoxStatusPanel({ summary, isLoading }: CashBoxStatusPanelPro
         </div>
       </div>
 
-      {/* Transactions count card */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
           Cuentas

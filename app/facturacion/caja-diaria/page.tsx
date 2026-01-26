@@ -141,8 +141,9 @@ export default function CajaDiariaPage() {
       {/* State C: CashBox is Closed */}
       {!isLoading && cashBox && status === 'Closed' && summary && (
         <div className="space-y-6">
-          <DailyReportCard summary={summary} />
-          
+          <div id="daily-report">
+            <DailyReportCard summary={summary} />
+          </div>
           {reopenError && (
             <div className="rounded-md bg-red-50 border border-red-200 p-4">
               <p className="text-sm text-red-600">{reopenError}</p>
