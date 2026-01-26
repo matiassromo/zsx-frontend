@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SendHorizontal } from 'lucide-react';
 import { Drawer } from '@/app/components/ui/Drawer';
+import { Modal } from '@/app/components/ui/Modal';
 import { analyzePrompt } from '@/lib/api/analyst';
 import type { AnalystChartResponse, AnalystAnalysisResponse } from '@/lib/api/types';
 
@@ -51,6 +52,10 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; title: string } | null>(
+    null
+  );
+  const [lightboxZoom, setLightboxZoom] = useState(1);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -58,6 +63,19 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
   }, [messages, isLoading]);
 
   const canSend = useMemo(() => input.trim().length > 4 && !isLoading, [input, isLoading]);
+
+  const openLightbox = (src: string, title: string) => {
+    setLightboxZoom(1);
+    setLightboxImage({ src, title });
+  };
+
+  const closeLightbox = () => {
+    setLightboxImage(null);
+  };
+
+  const zoomIn = () => setLightboxZoom((prev) => Math.min(prev + 0.25, 3));
+  const zoomOut = () => setLightboxZoom((prev) => Math.max(prev - 0.25, 0.5));
+  const resetZoom = () => setLightboxZoom(1);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -129,11 +147,23 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
                       {message.charts.map((chart, index) => (
                         <div key={`${message.id}-chart-${index}`} className="space-y-2">
                           <div className="text-xs font-medium text-gray-600">{chart.title}</div>
-                          <img
-                            src={`data:image/png;base64,${chart.image_base64}`}
-                            alt={chart.title}
-                            className="w-full rounded-lg border border-black/10 bg-white"
-                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openLightbox(
+                                `data:image/png;base64,${chart.image_base64}`,
+                                chart.title
+                              )
+                            }
+                            className="w-full rounded-lg border border-black/10 bg-white p-0 text-left transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label={`Abrir grafico ${chart.title}`}
+                          >
+                            <img
+                              src={`data:image/png;base64,${chart.image_base64}`}
+                              alt={chart.title}
+                              className="w-full rounded-lg"
+                            />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -188,6 +218,53 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
           </div>
         </form>
       </div>
+      <Modal
+        isOpen={Boolean(lightboxImage)}
+        onClose={closeLightbox}
+        title={lightboxImage?.title ?? 'Vista de grafico'}
+        size="xl"
+      >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs text-gray-500">
+              Zoom {Math.round(lightboxZoom * 100)}%
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={zoomOut}
+                className="rounded-md border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                -
+              </button>
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="rounded-md border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                100%
+              </button>
+              <button
+                type="button"
+                onClick={zoomIn}
+                className="rounded-md border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          {lightboxImage && (
+            <div className="max-h-[70vh] overflow-auto rounded-lg border border-black/10 bg-gray-50 p-3">
+              <img
+                src={lightboxImage.src}
+                alt={lightboxImage.title}
+                className="mx-auto max-w-none rounded-lg bg-white"
+                style={{ width: `${lightboxZoom * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
     </Drawer>
   );
 }
