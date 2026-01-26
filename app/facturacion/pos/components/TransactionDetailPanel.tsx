@@ -17,6 +17,9 @@ import { AddBarOrderModal } from './modals/AddBarOrderModal';
 import { AddAccessCardModal } from './modals/AddAccessCardModal';
 import { AddPaymentModal } from './modals/AddPaymentModal';
 import { CloseTransactionDialog } from './modals/CloseTransactionDialog';
+import { ExportReceiptButton } from '../components/ExportReceiptButton';
+import { ReceiptPrintView } from '../components/ReceiptPrintView';
+
 
 interface TransactionDetailPanelProps {
   detail: TransactionDetail | null;
@@ -132,13 +135,30 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
         onRefresh={onRefresh}
       />
 
-      <TotalsSection
-        totalCharges={totalCharges}
-        totalPayments={totalPayments}
-        pendingBalance={pendingBalance}
-        isOpen={isOpen}
-        onClose={() => setIsCloseDialogOpen(true)}
-      />
+        {/* Acciones */}
+        <div className="p-4">
+          <ExportReceiptButton
+            targetId={`receipt-${transaction.id}`}
+            disabled={!detail}
+            label="Imprimir comprobante"
+          />
+        </div>
+
+        {/* Vista oculta para generar el PDF */}
+        <div className="absolute -left-[9999px] -top-[9999px]">
+          <div id={`receipt-${transaction.id}`}>
+            <ReceiptPrintView detail={detail} logoSrc="/brand/logo.png" />
+          </div>
+        </div>
+
+        <TotalsSection
+          totalCharges={totalCharges}
+          totalPayments={totalPayments}
+          pendingBalance={pendingBalance}
+          isOpen={isOpen}
+          onClose={() => setIsCloseDialogOpen(true)}
+        />
+
 
       <AddEntranceModal
         isOpen={isEntranceModalOpen}
