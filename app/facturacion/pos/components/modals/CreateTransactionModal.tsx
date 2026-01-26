@@ -1,20 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
 import { ClientSearchCombobox } from '@/app/components/ui/ClientSearchCombobox';
 import { createTransaction } from '@/lib/api/transactions';
+import { useCashBox } from '@/app/facturacion/caja-diaria/hooks/useCashBox';
+import type { CashBox } from '@/lib/api/types';
 
-interface CreateTransactionModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => Promise<void>;
+
+  /**
+   * Opcional: si quieres inyectar caja desde otra pantalla (POS).
+   * Si NO lo pasas (ej: /transacciones), el modal usa useCashBox() automáticamente.
+   */
+  cashBox?: CashBox | null;
 }
 
-export function CreateTransactionModal({ isOpen, onClose, onSuccess }: CreateTransactionModalProps) {
+export function CreateTransactionModal({ isOpen, onClose, onSuccess, cashBox }: Props) {
+  const { cashBox: hookCashBox, isLoading: isCashBoxLoading, error: cashBoxError } = useCashBox();
+
+  const effectiveCashBox = useMemo(() => cashBox ?? hookCashBox, [cashBox, hookCashBox]);
+
   const [clientId, setClientId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setError('');
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setClientId('');
+    setError('');
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,10 +47,30 @@ export function CreateTransactionModal({ isOpen, onClose, onSuccess }: CreateTra
       return;
     }
 
+    if (isCashBoxLoading) {
+      setError('Cargando caja...');
+      return;
+    }
+
+    if (cashBoxError) {
+      setError(cashBoxError.message || 'Error al cargar la caja');
+      return;
+    }
+
+    if (!effectiveCashBox || effectiveCashBox.status !== 'Open') {
+      setError('No hay caja ABIERTA hoy. Abre caja antes de crear una cuenta.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setError('');
-      await createTransaction({ clientId });
+
+      await createTransaction({
+        clientId,
+        cashBoxId: effectiveCashBox.id, // ✅ requerido por el backend actual
+      });
+
       await onSuccess();
       handleClose();
     } catch (err) {
@@ -37,14 +80,8 @@ export function CreateTransactionModal({ isOpen, onClose, onSuccess }: CreateTra
     }
   };
 
-  const handleClose = () => {
-    setClientId('');
-    setError('');
-    onClose();
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Nueva Cuenta">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Nueva Transacción">
       <form onSubmit={handleSubmit} className="space-y-4">
         <ClientSearchCombobox
           value={clientId}
@@ -52,9 +89,7 @@ export function CreateTransactionModal({ isOpen, onClose, onSuccess }: CreateTra
           error={!clientId && error ? 'Seleccione un cliente' : undefined}
         />
 
-        {error && (
-          <p className="text-sm text-red-600">{error}</p>
-        )}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         <div className="flex justify-end gap-3">
           <button
@@ -70,7 +105,7 @@ export function CreateTransactionModal({ isOpen, onClose, onSuccess }: CreateTra
             disabled={isSubmitting || !clientId}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
           >
-            {isSubmitting ? 'Creando...' : 'Crear Cuenta'}
+            {isSubmitting ? 'Creando...' : 'Crear'}
           </button>
         </div>
       </form>

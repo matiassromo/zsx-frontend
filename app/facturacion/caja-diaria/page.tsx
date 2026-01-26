@@ -17,6 +17,7 @@ export default function CajaDiariaPage() {
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
   const [reopenError, setReopenError] = useState('');
+  
 
   const handleOpenSuccess = () => refetch();
   const handleCloseSuccess = () => refetch();

@@ -2,20 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getTransactions } from '@/lib/api/transactions';
-import { getTodayCashBox } from '@/lib/api/cash-boxes';
-import type { Transaction, CashBox } from '@/lib/api/types';
+import type { Transaction } from '@/lib/api/types';
 
 interface UsePosTransactionsReturn {
   transactions: Transaction[];
-  cashBox: CashBox | null;
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
 }
 
-export function usePosTransactions(): UsePosTransactionsReturn {
+export function usePosTransactions(cashBoxId?: string | null): UsePosTransactionsReturn {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [cashBox, setCashBox] = useState<CashBox | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -24,21 +21,19 @@ export function usePosTransactions(): UsePosTransactionsReturn {
       setIsLoading(true);
       setError(null);
 
-      const todayCashBox = await getTodayCashBox();
-      setCashBox(todayCashBox);
-
-      if (todayCashBox) {
-        const data = await getTransactions(todayCashBox.id);
-        setTransactions(data);
-      } else {
+      if (!cashBoxId) {
         setTransactions([]);
+        return;
       }
+
+      const data = await getTransactions(cashBoxId);
+      setTransactions(data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error al cargar transacciones'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [cashBoxId]);
 
   useEffect(() => {
     fetchData();
@@ -46,7 +41,6 @@ export function usePosTransactions(): UsePosTransactionsReturn {
 
   return {
     transactions,
-    cashBox,
     isLoading,
     error,
     refetch: fetchData,

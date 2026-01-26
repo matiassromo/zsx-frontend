@@ -84,14 +84,30 @@ export async function apiClient<T>(
   const config: RequestInit = { method, headers };
   if (body !== undefined) config.body = JSON.stringify(body);
 
+  console.log("[apiClient]", method, url);
+
+
   const response = await fetch(url, config);
 
   // 401: limpiar auth y avisar
-  if (response.status === 401) {
-    clearAuth();
-    emitZsEvent({ type: "auth:unauthorized", at: Date.now() });
-    throw new ApiError(response.status, response.statusText, "Unauthorized");
+if (!response.ok) {
+  const raw = await response.text().catch(() => "");
+  let msg = raw;
+
+  // intenta extraer message del típico ProblemDetails / {message:""}
+  try {
+    const j = JSON.parse(raw);
+    msg =
+      j?.message ||
+      j?.title ||
+      j?.error ||
+      (typeof j === "string" ? j : raw);
+  } catch {
+    // raw ya es texto
   }
+
+  throw new ApiError(response.status, response.statusText, msg);
+}
 
   // ✅ Lecturas: 404 = "no existe" (ej: CashBoxes/today sin caja)
   if (method === "GET" && response.status === 404) {

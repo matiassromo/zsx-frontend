@@ -1,3 +1,5 @@
+// lib/api/types.ts
+
 // Enums
 export type DocumentType = "Cedula" | "Ruc";
 export type PaymentType = "Efectivo" | "Transferencia";
@@ -67,9 +69,15 @@ export interface CloseCashBoxRequestDto {
   notes?: string | null;
 }
 
+/**
+ * ✅ FIX: el backend requiere CashBoxId para crear Transacciones.
+ * Si tu backend lo hace obligatorio, mantenlo obligatorio aquí también.
+ */
 export interface TransactionRequestDto {
   clientId: string;
+  cashBoxId: string; // ✅ agregar
 }
+
 
 export interface PaymentRequestDto {
   total: number;
@@ -114,7 +122,7 @@ export interface EntranceAccessCardRequestDto {
   qty?: number;
 }
 
-// Response types (inferred from backend domain)
+// Response types
 export interface Client {
   id: string;
   name: string;
@@ -231,8 +239,8 @@ export interface EntranceAccessCard {
   entranceDate: string;
   entranceEntryTime: string;
   entranceExitTime?: string | null;
-  qty?: number; // ✅ NUEVO
-  entryTime?: string; // opcional si lo expones desde backend
+  qty?: number;
+  entryTime?: string;
   exitTime?: string | null;
 }
 
