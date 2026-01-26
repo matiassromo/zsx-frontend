@@ -5,8 +5,12 @@ import type { Parking } from '@/lib/api/types';
 interface ParkingSectionProps {
   parkings: Parking[];
   isOpen: boolean;
+
   onAdd: () => void;
-  onRefresh: () => Promise<void>;
+
+  // NEW
+  onEdit: (parking: Parking) => void;
+  onDelete: (parking: Parking) => void;
 }
 
 function formatTime(dateString: string): string {
@@ -23,13 +27,12 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function ParkingSection({ parkings, isOpen, onAdd }: ParkingSectionProps) {
+export function ParkingSection({ parkings, isOpen, onAdd, onEdit, onDelete }: ParkingSectionProps) {
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Parqueo
-        </h3>
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Parqueo</h3>
+
         {isOpen && (
           <button
             onClick={onAdd}
@@ -46,14 +49,32 @@ export function ParkingSection({ parkings, isOpen, onAdd }: ParkingSectionProps)
         <div className="space-y-2">
           {parkings.map((parking) => (
             <div key={parking.id} className="text-sm">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <span className="text-gray-600">
                   Entrada: {formatTime(parking.entryTime)}
                   {parking.exitTime && ` - Salida: ${formatTime(parking.exitTime)}`}
                 </span>
-                <span className="font-medium text-gray-900">
-                  {formatCurrency(parking.total)}
-                </span>
+
+                <div className="flex items-center gap-3">
+                  {isOpen && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onEdit(parking)}
+                        className="text-xs text-blue-600 hover:underline font-medium"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => onDelete(parking)}
+                        className="text-xs text-red-600 hover:underline font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  )}
+
+                  <span className="font-medium text-gray-900">{formatCurrency(parking.total)}</span>
+                </div>
               </div>
             </div>
           ))}

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
 import { Input } from '@/app/components/ui/Input';
 
-import { getAccessCards, createAccessCard } from '@/lib/api/access-cards';
+import { getAccessCards, createAccessCard, updateAccessCard } from '@/lib/api/access-cards';
 import { getTransactions } from '@/lib/api/transactions';
 import { createEntranceAccessCard } from '@/lib/api/entrance-access-cards';
 
@@ -36,12 +36,25 @@ function nowTimeOnly() {
   return `${hh}:${mi}:${ss}`;
 }
 
+type EditMode = 'create' | 'edit';
+
+type AccessCardInitialValues = {
+  uses?: number;
+  total?: number;
+  usesToConsume?: number;
+};
+
 interface AddAccessCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionId: string;
   client: AnyClient;
   onSuccess: () => Promise<void>;
+
+  // NEW (para edición desde el panel)
+  mode?: EditMode;
+  accessCardId?: string;
+  initialValues?: AccessCardInitialValues;
 }
 
 type Mode = 'auto' | 'use_existing' | 'create_new';
@@ -57,7 +70,12 @@ export function AddAccessCardModal({
   transactionId,
   client,
   onSuccess,
+  mode: modeProp = 'create',
+  accessCardId,
+  initialValues,
 }: AddAccessCardModalProps) {
+  const isEdit = modeProp === 'edit';
+
   const [mode, setMode] = useState<Mode>('auto');
 
   const [isLoadingCard, setIsLoadingCard] = useState(false);
@@ -77,8 +95,27 @@ export function AddAccessCardModal({
     return { id, name, doc };
   }, [client]);
 
+  // PRELOAD para edición (sin auto-detect)
   useEffect(() => {
     if (!isOpen) return;
+    if (!isEdit) return;
+
+    setError('');
+    setIsLoadingCard(false);
+    setExistingCard(null);
+
+    // en edit forzamos create_new (porque estás editando el cargo / tarjeta de esta cuenta)
+    setMode('create_new');
+
+    setUsesTotal(initialValues?.uses ?? 10);
+    setPrice(initialValues?.total ?? 55);
+    setUsesToConsume(initialValues?.usesToConsume ?? 1);
+  }, [isOpen, isEdit, initialValues?.uses, initialValues?.total, initialValues?.usesToConsume]);
+
+  // Lógica actual: auto detectar tarjeta (solo cuando NO es edición)
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isEdit) return;
 
     const run = async () => {
       setError('');
@@ -94,17 +131,18 @@ export function AddAccessCardModal({
         const txById = new Map<string, typeof transactions[number]>();
         for (const t of transactions) txById.set(String(t.id), t);
 
-        const found = cards.find((c) => {
-          const tx = c?.transactionId ? txById.get(String(c.transactionId)) : null;
-          const txClientId = tx?.client?.id
-            ? String(tx.client.id)
-            : tx?.clientId
-            ? String(tx.clientId)
-            : '';
-          const txDoc = norm(tx?.client?.documentNumber ?? '');
+        const found =
+          cards.find((c) => {
+            const tx = c?.transactionId ? txById.get(String(c.transactionId)) : null;
+            const txClientId = tx?.client?.id
+              ? String(tx.client.id)
+              : (tx as any)?.clientId
+              ? String((tx as any).clientId)
+              : '';
+            const txDoc = norm(tx?.client?.documentNumber ?? '');
 
-          return (targetClientId && txClientId === targetClientId) || (targetDoc && txDoc === targetDoc);
-        }) || null;
+            return (targetClientId && txClientId === targetClientId) || (targetDoc && txDoc === targetDoc);
+          }) || null;
 
         if (found) {
           setExistingCard(found);
@@ -120,10 +158,18 @@ export function AddAccessCardModal({
     };
 
     run();
-  }, [isOpen, clientKey.id, clientKey.doc]);
+  }, [isOpen, isEdit, clientKey.id, clientKey.doc]);
 
   const canSubmit = useMemo(() => {
     if (isSubmitting) return false;
+
+    if (isEdit) {
+      // en edit guardas tarjeta (uses/price) y opcional consume
+      if (usesTotal <= 0) return false;
+      if (price < 0) return false;
+      if (!accessCardId) return false;
+      return true;
+    }
 
     if (mode === 'use_existing') {
       return !!existingCard && usesToConsume > 0;
@@ -134,7 +180,7 @@ export function AddAccessCardModal({
     }
 
     return false;
-  }, [mode, existingCard, usesToConsume, usesTotal, price, isSubmitting]);
+  }, [isEdit, accessCardId, mode, existingCard, usesToConsume, usesTotal, price, isSubmitting]);
 
   const handleClose = () => {
     setError('');
@@ -146,9 +192,9 @@ export function AddAccessCardModal({
     onClose();
   };
 
-  async function consumePasses(accessCardId: string, qty: number) {
+  async function consumePasses(accessCardIdValue: string, qty: number) {
     await createEntranceAccessCard({
-      accessCardId,
+      accessCardId: accessCardIdValue,
       entranceDate: nowDateOnly(),
       entranceEntryTime: nowTimeOnly(),
       entranceExitTime: null,
@@ -163,6 +209,29 @@ export function AddAccessCardModal({
     try {
       setIsSubmitting(true);
 
+      // EDIT: actualiza la tarjeta asociada (cargo) y opcional consume
+      if (isEdit) {
+        if (!accessCardId) throw new Error('Falta accessCardId para editar.');
+        if (usesTotal <= 0) throw new Error('Ingrese un número válido de usos.');
+        if (price < 0) throw new Error('Ingrese un precio válido.');
+
+        await updateAccessCard(accessCardId, {
+          transactionId,
+          uses: usesTotal,
+          total: price,
+        });
+
+        // si quieres permitir “ajustar usos a consumir” también en edición:
+        if (usesToConsume > 0) {
+          await consumePasses(accessCardId, usesToConsume);
+        }
+
+        await onSuccess();
+        handleClose();
+        return;
+      }
+
+      // CREATE FLOW (tu lógica actual)
       if (mode === 'use_existing') {
         if (!existingCard?.id) throw new Error('No se encontró el ID de la tarjeta existente.');
         if (usesToConsume <= 0) throw new Error('Ingrese una cantidad válida de pases a usar.');
@@ -199,7 +268,11 @@ export function AddAccessCardModal({
     }
   };
 
-  const title = mode === 'use_existing' ? 'Usar Tarjeta de Pases' : 'Agregar Tarjeta de Pases';
+  const title = isEdit
+    ? 'Editar Tarjeta de Pases'
+    : mode === 'use_existing'
+    ? 'Usar Tarjeta de Pases'
+    : 'Agregar Tarjeta de Pases';
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={title}>
@@ -209,9 +282,11 @@ export function AddAccessCardModal({
           {clientKey.doc ? <span className="text-gray-500"> · {clientKey.doc}</span> : null}
         </div>
 
-        {isLoadingCard ? <div className="text-sm text-gray-500">Verificando tarjeta existente...</div> : null}
+        {!isEdit && isLoadingCard ? (
+          <div className="text-sm text-gray-500">Verificando tarjeta existente...</div>
+        ) : null}
 
-        {mode === 'use_existing' && existingCard ? (
+        {!isEdit && mode === 'use_existing' && existingCard ? (
           <div className="rounded-md border border-gray-200 p-3">
             <div className="text-sm">
               Tarjeta detectada:{' '}
@@ -222,7 +297,7 @@ export function AddAccessCardModal({
         ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'create_new' ? (
+          {(isEdit || mode === 'create_new') ? (
             <>
               <Input
                 label="Número de usos (tarjeta)"
@@ -241,11 +316,15 @@ export function AddAccessCardModal({
                 onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
               />
 
-              <div className="text-xs text-gray-500">Regla POS: si no existe tarjeta previa, se crea y se cobra aquí.</div>
+              {!isEdit ? (
+                <div className="text-xs text-gray-500">
+                  Regla POS: si no existe tarjeta previa, se crea y se cobra aquí.
+                </div>
+              ) : null}
             </>
           ) : null}
 
-          {mode === 'use_existing' || mode === 'create_new' ? (
+          {(isEdit || mode === 'use_existing' || mode === 'create_new') ? (
             <Input
               label="Pases a usar ahora (Qty)"
               type="number"
@@ -267,7 +346,7 @@ export function AddAccessCardModal({
               Cancelar
             </button>
 
-            {mode === 'use_existing' ? (
+            {!isEdit && mode === 'use_existing' ? (
               <button
                 type="button"
                 onClick={() => setMode('create_new')}
@@ -283,7 +362,13 @@ export function AddAccessCardModal({
               disabled={!canSubmit}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
             >
-              {isSubmitting ? 'Procesando...' : mode === 'use_existing' ? 'Usar pases' : 'Crear y cobrar'}
+              {isSubmitting
+                ? 'Procesando...'
+                : isEdit
+                ? 'Guardar cambios'
+                : mode === 'use_existing'
+                ? 'Usar pases'
+                : 'Crear y cobrar'}
             </button>
           </div>
         </form>
