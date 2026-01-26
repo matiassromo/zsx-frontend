@@ -103,3 +103,6 @@ export {
   updateEntranceAccessCard,
   deleteEntranceAccessCard,
 } from "./entrance-access-cards";
+
+// Analyst bot service
+export { analyzePrompt } from "./analyst";

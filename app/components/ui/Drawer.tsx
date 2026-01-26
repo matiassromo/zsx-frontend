@@ -3,26 +3,25 @@
 import { useEffect, useSyncExternalStore, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
-interface ModalProps {
+interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const sizeClasses = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
-  xl: 'max-w-5xl',
 };
 
 function subscribe() {
   return () => {};
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Drawer({ isOpen, onClose, title, children, size = 'md' }: DrawerProps) {
   const mounted = useSyncExternalStore(
     subscribe,
     () => true,
@@ -50,23 +49,20 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   if (!mounted || !isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50">
       <div
         className="absolute inset-0 bg-black/50 transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Modal content */}
       <div
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-lg shadow-xl`}
+        className={`absolute right-0 top-0 h-full w-full ${sizeClasses[size]} bg-white shadow-xl`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby="drawer-title"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
+          <h2 id="drawer-title" className="text-lg font-semibold text-gray-900">
             {title}
           </h2>
           <button
@@ -79,8 +75,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             </svg>
           </button>
         </div>
-        {/* Body */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="h-[calc(100%-4rem)]">{children}</div>
       </div>
     </div>,
     document.body
