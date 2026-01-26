@@ -21,6 +21,95 @@ function formatDate(dateString: string): string {
   });
 }
 
+function IconButton({
+  label,
+  onClick,
+  variant = 'neutral',
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  variant?: 'neutral' | 'warning' | 'danger';
+  children: React.ReactNode;
+}) {
+  const base =
+    'inline-flex items-center justify-center rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+
+  const styles =
+    variant === 'danger'
+      ? 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+      : variant === 'warning'
+        ? 'text-gray-500 hover:text-orange-600 hover:bg-orange-50'
+        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50';
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={`${base} ${styles}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PencilIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z" />
+    </svg>
+  );
+}
+
+function LockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M17 11H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z" />
+      <path d="M12 17v2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
+function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
 function TableSkeleton() {
   return (
     <>
@@ -57,12 +146,7 @@ export function TransactionsTable({
   if (!isLoading && transactions.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-        <svg
-          className="mx-auto h-12 w-12 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -98,6 +182,7 @@ export function TransactionsTable({
             </th>
           </tr>
         </thead>
+
         <tbody className="bg-white divide-y divide-gray-200">
           {isLoading ? (
             <TableSkeleton />
@@ -116,57 +201,24 @@ export function TransactionsTable({
                 <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">
                   {transaction.closedAt ? formatDate(transaction.closedAt) : '-'}
                 </td>
+
                 <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
+                  <div className="flex items-center justify-end gap-2">
                     {transaction.status === 'Open' && (
                       <>
-                        <button
-                          onClick={() => onEdit(transaction)}
-                          className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
-                          aria-label="Editar transaccion"
-                          title="Editar"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => onClose(transaction)}
-                          className="p-1.5 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
-                          aria-label="Cerrar transaccion"
-                          title="Cerrar"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                            />
-                          </svg>
-                        </button>
+                        <IconButton label="Editar" onClick={() => onEdit(transaction)}>
+                          <PencilIcon className="h-5 w-5" />
+                        </IconButton>
+
+                        <IconButton label="Cerrar" variant="warning" onClick={() => onClose(transaction)}>
+                          <LockIcon className="h-5 w-5" />
+                        </IconButton>
                       </>
                     )}
-                    <button
-                      onClick={() => onDelete(transaction)}
-                      className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                      aria-label="Eliminar transaccion"
-                      title="Eliminar"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
+
+                    <IconButton label="Eliminar" variant="danger" onClick={() => onDelete(transaction)}>
+                      <TrashIcon className="h-5 w-5" />
+                    </IconButton>
                   </div>
                 </td>
               </tr>

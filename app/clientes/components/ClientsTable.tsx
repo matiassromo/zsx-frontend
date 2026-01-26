@@ -1,3 +1,4 @@
+// ClientsTable.tsx
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -8,6 +9,74 @@ interface ClientsTableProps {
   isLoading: boolean;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+}
+
+function IconButton({
+  label,
+  onClick,
+  variant = 'neutral',
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  variant?: 'neutral' | 'danger';
+  children: React.ReactNode;
+}) {
+  const base =
+    'inline-flex items-center justify-center rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+  const styles =
+    variant === 'danger'
+      ? 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50';
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={`${base} ${styles}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PencilIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z" />
+    </svg>
+  );
+}
+
+function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
 }
 
 function TableSkeleton() {
@@ -53,15 +122,7 @@ export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTa
     const q = normalize(query);
 
     return clients.filter((c) => {
-      const haystack = [
-        c.name,
-        c.documentType,
-        c.documentNumber,
-        c.email,
-        // si tienes phone / address en Client, puedes agregarlos aquí
-        // c.phone,
-        // c.address,
-      ]
+      const haystack = [c.name, c.documentType, c.documentNumber, c.email]
         .map(normalize)
         .join(' ');
 
@@ -70,7 +131,8 @@ export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTa
   }, [clients, query]);
 
   const showEmptyAll = !isLoading && clients.length === 0;
-  const showEmptyFiltered = !isLoading && clients.length > 0 && filteredClients.length === 0 && query.trim();
+  const showEmptyFiltered =
+    !isLoading && clients.length > 0 && filteredClients.length === 0 && query.trim();
 
   if (showEmptyAll) {
     return (
@@ -91,7 +153,6 @@ export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTa
 
   return (
     <div className="space-y-3">
-      {/* Buscador */}
       <div className="bg-white rounded-lg border border-gray-200 px-3 py-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -141,37 +202,22 @@ export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTa
         {showEmptyFiltered && (
           <div className="mt-2 text-sm text-gray-600 flex items-center justify-between">
             <span>No hay resultados para “{query.trim()}”.</span>
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
+            <button type="button" onClick={() => setQuery('')} className="text-blue-600 hover:text-blue-700 font-medium">
               Limpiar
             </button>
           </div>
         )}
       </div>
 
-      {/* Tabla */}
       <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nombre
-              </th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo Doc.
-              </th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Documento
-              </th>
-              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Doc.</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
 
@@ -182,46 +228,19 @@ export function ClientsTable({ clients, isLoading, onEdit, onDelete }: ClientsTa
               filteredClients.map((client) => (
                 <tr key={client.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{client.name}</td>
-                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
-                    {client.documentType || '-'}
-                  </td>
-                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
-                    {client.documentNumber || '-'}
-                  </td>
-                  <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">
-                    {client.email || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => onEdit(client)}
-                        className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
-                        aria-label={`Editar ${client.name}`}
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </button>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{client.documentType || '-'}</td>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{client.documentNumber || '-'}</td>
+                  <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">{client.email || '-'}</td>
 
-                      <button
-                        onClick={() => onDelete(client)}
-                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                        aria-label={`Eliminar ${client.name}`}
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <IconButton label="Editar" onClick={() => onEdit(client)}>
+                        <PencilIcon className="h-5 w-5" />
+                      </IconButton>
+
+                      <IconButton label="Eliminar" variant="danger" onClick={() => onDelete(client)}>
+                        <TrashIcon className="h-5 w-5" />
+                      </IconButton>
                     </div>
                   </td>
                 </tr>

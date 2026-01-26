@@ -1,3 +1,4 @@
+// EntranceTransactionsTable.tsx
 'use client';
 
 import { formatCurrency } from '@/app/facturacion/caja-diaria/utils/formatCurrency';
@@ -35,6 +36,52 @@ function formatCountsShort(entranceTransaction: EntranceTransactionWithTransacti
     `S:${entranceTransaction.numberSeniors ?? 0}`,
     `D:${entranceTransaction.numberDisabled ?? 0}`,
   ].join(' ');
+}
+
+function IconButton({
+  label,
+  onClick,
+  variant = 'neutral',
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  variant?: 'neutral' | 'danger';
+  children: React.ReactNode;
+}) {
+  const base =
+    'inline-flex items-center justify-center rounded-md p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+  const styles =
+    variant === 'danger'
+      ? 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50';
+
+  return (
+    <button type="button" aria-label={label} title={label} onClick={onClick} className={`${base} ${styles}`}>
+      {children}
+    </button>
+  );
+}
+
+function PencilIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z" />
+    </svg>
+  );
+}
+
+function TrashIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
 }
 
 function TableSkeleton() {
@@ -78,12 +125,7 @@ export function EntranceTransactionsTable({
   if (!isLoading && entranceTransactions.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-        <svg
-          className="mx-auto h-12 w-12 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -106,29 +148,16 @@ export function EntranceTransactionsTable({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Cliente
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Transaccion
-              </th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Entrada
-              </th>
-              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Salida
-              </th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Personas
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaccion</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salida</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personas</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
+
           <tbody className="bg-white divide-y divide-gray-200">
             {isLoading ? (
               <TableSkeleton />
@@ -136,39 +165,29 @@ export function EntranceTransactionsTable({
               entranceTransactions.map((entranceTransaction) => (
                 <tr key={entranceTransaction.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    <div className="font-medium">
-                      {entranceTransaction.owner?.name || 'Sin cliente'}
-                    </div>
+                    <div className="font-medium">{entranceTransaction.owner?.name || 'Sin cliente'}</div>
                     <div className="mt-1 text-xs text-gray-500 md:hidden">
                       {formatDateTime(entranceTransaction.entryTime)}{' '}
-                      {entranceTransaction.exitTime
-                        ? `- ${formatDateTime(entranceTransaction.exitTime)}`
-                        : '- En curso'}
+                      {entranceTransaction.exitTime ? `- ${formatDateTime(entranceTransaction.exitTime)}` : '- En curso'}
                     </div>
-                    <div className="text-xs text-gray-500 md:hidden">
-                      Personas: {formatCountsShort(entranceTransaction)}
-                    </div>
+                    <div className="text-xs text-gray-500 md:hidden">Personas: {formatCountsShort(entranceTransaction)}</div>
                   </td>
+
                   <td className="px-4 py-3 text-sm text-gray-700">
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {formatTransactionId(entranceTransaction.transactionId)}
-                      </p>
+                      <p className="font-medium text-gray-900">{formatTransactionId(entranceTransaction.transactionId)}</p>
                       {entranceTransaction.transactionId && (
-                        <p className="text-xs text-gray-400 font-mono">
-                          {entranceTransaction.transactionId}
-                        </p>
+                        <p className="text-xs text-gray-400 font-mono">{entranceTransaction.transactionId}</p>
                       )}
                     </div>
                   </td>
-                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
-                    {formatDateTime(entranceTransaction.entryTime)}
-                  </td>
+
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{formatDateTime(entranceTransaction.entryTime)}</td>
+
                   <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-500">
-                    {entranceTransaction.exitTime
-                      ? formatDateTime(entranceTransaction.exitTime)
-                      : 'En curso'}
+                    {entranceTransaction.exitTime ? formatDateTime(entranceTransaction.exitTime) : 'En curso'}
                   </td>
+
                   <td className="hidden md:table-cell px-4 py-3 text-xs text-gray-600">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       <span>Adultos: {entranceTransaction.numberAdults ?? 0}</span>
@@ -177,23 +196,18 @@ export function EntranceTransactionsTable({
                       <span>Discap.: {entranceTransaction.numberDisabled ?? 0}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {formatCurrency(entranceTransaction.total)}
-                  </td>
+
+                  <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(entranceTransaction.total)}</td>
+
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => onEdit(entranceTransaction)}
-                        className="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => onDelete(entranceTransaction)}
-                        className="px-3 py-1.5 text-sm text-white bg-red-500 rounded hover:bg-red-600 transition-colors"
-                      >
-                        Eliminar
-                      </button>
+                      <IconButton label="Editar" onClick={() => onEdit(entranceTransaction)}>
+                        <PencilIcon className="h-5 w-5" />
+                      </IconButton>
+
+                      <IconButton label="Eliminar" variant="danger" onClick={() => onDelete(entranceTransaction)}>
+                        <TrashIcon className="h-5 w-5" />
+                      </IconButton>
                     </div>
                   </td>
                 </tr>
