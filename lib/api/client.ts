@@ -1,5 +1,11 @@
 import { emitZsEvent } from "@/lib/events";
-import { getStoredTokens, clearAuth, getStoredUser, isTokenExpired, storeAuth } from "@/lib/auth/storage";
+import {
+  getStoredTokens,
+  clearAuth,
+  getStoredUser,
+  isTokenExpired,
+  storeAuth,
+} from "@/lib/auth/storage";
 import { refreshToken as apiRefreshToken } from "@/lib/auth/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058";
@@ -25,11 +31,8 @@ async function getValidToken(): Promise<string | null> {
   const tokens = getStoredTokens();
   const storedUser = getStoredUser();
 
-  if (!tokens || !storedUser) {
-    return null;
-  }
+  if (!tokens || !storedUser) return null;
 
-  // Check if token is expired and refresh if needed
   if (isTokenExpired(storedUser.expiresAt)) {
     try {
       const response = await apiRefreshToken({
@@ -45,7 +48,6 @@ async function getValidToken(): Promise<string | null> {
 
       return response.token;
     } catch {
-      // Refresh failed
       clearAuth();
       emitZsEvent({ type: "auth:unauthorized", at: Date.now() });
       return null;
@@ -58,7 +60,7 @@ async function getValidToken(): Promise<string | null> {
 export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
-): Promise<T> {
+): Promise<T | undefined> {
   const { method = "GET", body, params } = options;
 
   let url = `${API_BASE_URL}${endpoint}`;
@@ -66,50 +68,48 @@ export async function apiClient<T>(
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        searchParams.append(key, value);
-      }
+      if (value !== undefined) searchParams.append(key, value);
     });
     const queryString = searchParams.toString();
-    if (queryString) {
-      url += `?${queryString}`;
-    }
+    if (queryString) url += `?${queryString}`;
   }
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
+  const headers: HeadersInit = { "Content-Type": "application/json" };
 
-  // Add auth header if token exists
   const token = await getValidToken();
   if (token) {
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
 
-  const config: RequestInit = {
-    method,
-    headers,
-  };
-
-  if (body !== undefined) {
-    config.body = JSON.stringify(body);
-  }
+  const config: RequestInit = { method, headers };
+  if (body !== undefined) config.body = JSON.stringify(body);
 
   const response = await fetch(url, config);
 
-  // Handle 401 Unauthorized - clear auth and emit event
+  // 401: limpiar auth y avisar
   if (response.status === 401) {
     clearAuth();
     emitZsEvent({ type: "auth:unauthorized", at: Date.now() });
     throw new ApiError(response.status, response.statusText, "Unauthorized");
   }
 
+  // ✅ Lecturas: 404 = "no existe" (ej: CashBoxes/today sin caja)
+  if (method === "GET" && response.status === 404) {
+    return undefined;
+  }
+
+  // ✅ 204 NoContent = "no hay data"
+  if (response.status === 204) {
+    return undefined;
+  }
+
+  // Otros errores reales
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     throw new ApiError(response.status, response.statusText, errorText);
   }
 
-  // ✅ Si fue mutación, notifica a toda la app (Dashboard, Caja, Lockers, etc.)
+  // ✅ Mutaciones: notificar
   if (method !== "GET") {
     emitZsEvent({
       type: "api:mutated",
@@ -119,9 +119,9 @@ export async function apiClient<T>(
     });
   }
 
-  if (response.status === 204 || response.headers.get("content-length") === "0") {
-    return undefined as T;
-  }
+  // ✅ Respuesta vacía (a veces content-length no viene o viene mal)
+  const text = await response.text();
+  if (!text) return undefined;
 
-  return response.json();
+  return JSON.parse(text) as T;
 }

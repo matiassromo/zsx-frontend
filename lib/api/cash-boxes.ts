@@ -57,8 +57,9 @@ export async function getCashBoxesByRange(from?: string, to?: string): Promise<C
 }
 
 export async function getCashBoxTransactions(id: string): Promise<Transaction[]> {
-  return apiClient<Transaction[]>(`/api/CashBoxes/${id}/transactions`);
+  return (await apiClient<Transaction[]>(`/api/CashBoxes/${id}/transactions`)) ?? [];
 }
+
 
 export async function getCashBoxSummary(id?: string): Promise<CashBoxSummary | null> {
   if (!id) return null;
@@ -80,28 +81,35 @@ export async function getCashBoxSummary(id?: string): Promise<CashBoxSummary | n
   };
 }
 
-export async function openCashBox(data: OpenCashBoxRequestDto): Promise<CashBox> {
-  const response = await apiClient<AnyRecord>("/api/CashBoxes/open", {
+export async function openCashBox(
+  data: OpenCashBoxRequestDto
+): Promise<CashBox> {
+  const response = (await apiClient<AnyRecord>("/api/CashBoxes/open", {
     method: "POST",
     body: data,
-  });
+  }))!;
 
   return mapCashBoxDtoToFront(response);
 }
 
-export async function closeCashBox(id: string, data: CloseCashBoxRequestDto): Promise<CashBox> {
-  const response = await apiClient<AnyRecord>(`/api/CashBoxes/${id}/close`, {
+
+export async function closeCashBox(
+  id: string,
+  data: CloseCashBoxRequestDto
+): Promise<CashBox> {
+  const response = (await apiClient<AnyRecord>(`/api/CashBoxes/${id}/close`, {
     method: "POST",
     body: data,
-  });
+  }))!;
 
   return mapCashBoxDtoToFront(response);
 }
+
 
 export async function reopenCashBox(id: string): Promise<CashBox> {
-  const response = await apiClient<AnyRecord>(`/api/CashBoxes/${id}/reopen`, {
+  const response = (await apiClient<AnyRecord>(`/api/CashBoxes/${id}/reopen`, {
     method: "POST",
-  });
+  }))!;
 
   return mapCashBoxDtoToFront(response);
 }
