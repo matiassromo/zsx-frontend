@@ -11,9 +11,11 @@ import {
   Wallet,
   Activity,
   Clock,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import { getDashboardSnapshot, type DashboardSnapshot } from "@/lib/api/dashboard";
+import AnalystChatDrawer from "@/app/dashboard/components/AnalystChatDrawer";
 
 // External store for dashboard refresh triggers
 let dashboardVersion = 0;
@@ -97,6 +99,7 @@ function Section({
 export default function DashboardClient() {
   const [data, setData] = useState<DashboardSnapshot | null>(null);
   const [error, setError] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -144,15 +147,25 @@ export default function DashboardClient() {
           </p>
         </div>
 
-        <button
-          onClick={load}
-          className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm shadow-sm hover:bg-black/5"
-        >
-          <RefreshCcw size={16} />
-          Refrescar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm shadow-sm hover:bg-black/5"
+          >
+            <MessageCircle size={16} />
+            Chat con analista
+          </button>
+          <button
+            onClick={load}
+            className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm shadow-sm hover:bg-black/5"
+          >
+            <RefreshCcw size={16} />
+            Refrescar
+          </button>
+        </div>
       </div>
 
+      <AnalystChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}

@@ -248,3 +248,22 @@ export interface TransactionDetail {
   totalPayments: number;
   pendingBalance: number;
 }
+
+// Analyst bot service types
+export interface AnalystAnalysisRequestDto {
+  prompt: string;
+  exclude_tables?: string[] | null;
+  generate_charts?: boolean | null;
+}
+
+export interface AnalystChartResponse {
+  type: string;
+  title: string;
+  image_base64: string;
+}
+
+export interface AnalystAnalysisResponse {
+  explanation: string;
+  sql_query: string;
+  charts: AnalystChartResponse[];
+}
