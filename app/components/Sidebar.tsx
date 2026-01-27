@@ -386,6 +386,7 @@ function FacturacionGroup() {
         >
           <SidebarButton href="/facturacion/pos">Punto de Venta</SidebarButton>
           <SidebarButton href="/facturacion/caja-diaria">Caja Diaria</SidebarButton>
+          <SidebarButton href="/facturacion/reporte-ventas">Reporte de Ventas</SidebarButton>
         </div>
       </div>
     </div>

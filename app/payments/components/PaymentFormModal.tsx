@@ -94,9 +94,11 @@ export function PaymentFormModal({
 
       if (isEditMode && payment) {
         await updatePayment(payment.id, payload);
+        new BroadcastChannel("zs-events").postMessage({ type: "payment:updated" });
         toast.success('Pago actualizado correctamente');
       } else {
         await createPayment(payload);
+        new BroadcastChannel("zs-events").postMessage({ type: "payment:created" });
         toast.success('Pago creado correctamente');
       }
 

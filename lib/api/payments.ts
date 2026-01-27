@@ -18,8 +18,13 @@ export async function createPayment(data: PaymentRequestDto): Promise<Payment> {
     body: data,
   });
   if (!res) throw new Error("Respuesta vacía al crear pago");
+
+  // ✅ AQUÍ
+  new BroadcastChannel("zs-events").postMessage({ type: "payment:created" });
+
   return res;
 }
+
 
 export async function updatePayment(id: string, data: PaymentRequestDto): Promise<Payment> {
   const res = await apiClient<Payment>(`/api/Payments/${id}`, {
@@ -27,6 +32,7 @@ export async function updatePayment(id: string, data: PaymentRequestDto): Promis
     body: data,
   });
   if (!res) throw new Error("Respuesta vacía al actualizar pago");
+  new BroadcastChannel("zs-events").postMessage({ type: "payment:updated" });
   return res;
 }
 

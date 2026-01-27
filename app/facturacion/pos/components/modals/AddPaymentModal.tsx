@@ -51,6 +51,9 @@ export function AddPaymentModal({ isOpen, onClose, transactionId, pendingBalance
         total,
         type,
       });
+
+      new BroadcastChannel("zs-events").postMessage({ type: "payment:created" });
+
       await onSuccess();
       handleClose();
     } catch (err) {
