@@ -48,19 +48,32 @@ export default function CajaDiariaPage() {
   // Debug - eliminar después de arreglar
   console.log('Debug:', { isLoading, cashBox, status, summary, error });
 
-  return (
+  return (  
     <div className="space-y-6">
       <InfoBar title="CAJA DIARIA" />
 
       {/* Status header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <StatusChip status={status} />
-        <div className="flex items-center gap-3">
-          {status === 'Closed' && summary && (
-            <ExportPdfButton reportElementId="daily-report" />
-          )}
-        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <StatusChip status={status} />
+
+      <div className="flex items-center gap-3">
+        {/* Abrir caja si no hay caja o está cerrada */}
+        {(status === null || status === 'Closed') && (
+          <button
+            onClick={() => setIsOpenModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-green-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-600"
+          >
+            Abrir Caja
+          </button>
+        )}
+
+        {/* Exportar PDF solo cuando esté cerrada */}
+        {status === 'Closed' && summary && (
+          <ExportPdfButton reportElementId="daily-report" />
+        )}
       </div>
+    </div>
+
 
       {/* Error display */}
       {error && (
