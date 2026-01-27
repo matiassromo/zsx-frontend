@@ -13,12 +13,21 @@ interface ParkingSectionProps {
   onDelete: (parking: Parking) => void;
 }
 
+function parseDateUtcIfNoZone(s: string) {
+  // si ya trae Z u offset, respétalo
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(s)) return new Date(s);
+  // si no trae zona, asúmelo UTC
+  return new Date(s + 'Z');
+}
+
+
 function formatTime(dateString: string): string {
-  return new Date(dateString).toLocaleTimeString('es-EC', {
+  return parseDateUtcIfNoZone(dateString).toLocaleTimeString('es-EC', {
     hour: '2-digit',
     minute: '2-digit',
   });
 }
+
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-EC', {

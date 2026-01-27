@@ -11,11 +11,15 @@ interface ParkingsTableProps {
   onDelete: (parking: ParkingWithTransaction) => void;
 }
 
-function formatDateTime(value?: string | null): string {
-  if (!value) return 'Sin dato';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Sin dato';
-  return date.toLocaleString('es-EC', {
+
+
+function parseDateUtcIfNoZone(s: string) {
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(s)) return new Date(s);
+  return new Date(s + 'Z');
+}
+
+function formatDateTime(dateString: string): string {
+  return parseDateUtcIfNoZone(dateString).toLocaleString('es-EC', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -23,6 +27,7 @@ function formatDateTime(value?: string | null): string {
     minute: '2-digit',
   });
 }
+
 
 function formatTransactionId(id?: string | null): string {
   if (!id) return 'Sin transaccion';
