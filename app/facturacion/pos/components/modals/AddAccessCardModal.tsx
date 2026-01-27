@@ -193,14 +193,18 @@ export function AddAccessCardModal({
   };
 
   async function consumePasses(accessCardIdValue: string, qty: number) {
+  const safeQty = Math.max(0, Math.floor(qty));
+  for (let i = 0; i < safeQty; i++) {
     await createEntranceAccessCard({
       accessCardId: accessCardIdValue,
       entranceDate: nowDateOnly(),
       entranceEntryTime: nowTimeOnly(),
       entranceExitTime: null,
-      qty,
+      qty: 1, // fuerza 1 por registro
     });
   }
+}
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +239,9 @@ export function AddAccessCardModal({
       if (mode === 'use_existing') {
         if (!existingCard?.id) throw new Error('No se encontró el ID de la tarjeta existente.');
         if (usesToConsume <= 0) throw new Error('Ingrese una cantidad válida de pases a usar.');
+        const available = maxConsume ?? 0;
+        if (usesToConsume > available) throw new Error(`Solo quedan ${available} pases disponibles.`);
+
 
         await consumePasses(existingCard.id, usesToConsume);
 
@@ -274,6 +281,27 @@ export function AddAccessCardModal({
     ? 'Usar Tarjeta de Pases'
     : 'Agregar Tarjeta de Pases';
 
+      const remaining = useMemo(() => {
+    if (isEdit) return null;
+    if (mode !== 'use_existing') return null;
+    if (!existingCard) return null;
+    const r = Number((existingCard as any).uses);
+    return Number.isFinite(r) ? r : 0;
+  }, [isEdit, mode, existingCard]);
+
+  const maxConsume = useMemo(() => {
+    if (isEdit) return undefined;
+    if (mode !== 'use_existing') return undefined;
+    if (remaining === null) return undefined;
+    return Math.max(0, Math.floor(remaining));
+  }, [isEdit, mode, remaining]);
+
+  // Si detecto tarjeta y el input quedó mayor al disponible, lo ajusto.
+  useEffect(() => {
+    if (maxConsume === undefined) return;
+    setUsesToConsume((prev) => Math.min(Math.max(0, prev), maxConsume));
+  }, [maxConsume]);
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={title}>
       <div className="space-y-3">
@@ -287,14 +315,22 @@ export function AddAccessCardModal({
         ) : null}
 
         {!isEdit && mode === 'use_existing' && existingCard ? (
-          <div className="rounded-md border border-gray-200 p-3">
+          <div className="rounded-md border border-gray-200 p-3 space-y-2">
             <div className="text-sm">
               Tarjeta detectada:{' '}
               <span className="font-medium">{existingCard?.shortCode || existingCard?.code || existingCard?.id}</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">(No se cobra. Solo se descuentan pases.)</div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500">(No se cobra. Solo se descuentan pases.)</span>
+
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">
+                Restantes: <span className="font-semibold">{maxConsume ?? 0}</span>
+              </span>
+            </div>
           </div>
         ) : null}
+
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {(isEdit || mode === 'create_new') ? (
@@ -324,15 +360,25 @@ export function AddAccessCardModal({
             </>
           ) : null}
 
-          {(isEdit || mode === 'use_existing' || mode === 'create_new') ? (
+            {(isEdit || mode === 'use_existing' || mode === 'create_new') ? (
             <Input
               label="Pases a usar ahora (Qty)"
               type="number"
               min={0}
+              max={mode === 'use_existing' ? (maxConsume ?? 0) : undefined}
               value={usesToConsume}
-              onChange={(e) => setUsesToConsume(parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                const v = parseInt(e.target.value) || 0;
+                if (mode === 'use_existing') {
+                  const m = maxConsume ?? 0;
+                  setUsesToConsume(Math.min(Math.max(0, v), m));
+                } else {
+                  setUsesToConsume(Math.max(0, v));
+                }
+              }}
             />
           ) : null}
+
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
