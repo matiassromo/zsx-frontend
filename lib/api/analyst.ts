@@ -1,45 +1,25 @@
-import type { AnalystAnalysisRequestDto, AnalystAnalysisResponse } from './types';
+import type { AnalystAnalysisRequestDto, MultiQueryAnalysisResponse } from './types';
 
-const ANALYST_API_BASE_URL = process.env.NEXT_PUBLIC_ANALYST_API_URL || 'http://localhost:8000/api/v1';
+export async function analyzePrompt(prompt: string, maxQueries = 5): Promise<MultiQueryAnalysisResponse> {
+  const payload: AnalystAnalysisRequestDto = { prompt, max_queries: maxQueries };
 
-type RequestOptions = {
-  method?: 'GET' | 'POST';
-  body?: unknown;
-};
-
-async function analystClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body } = options;
-  const url = `${ANALYST_API_BASE_URL}${endpoint}`;
-
-  const config: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  if (body !== undefined) {
-    config.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(url, config);
+  const response = await fetch('/api/analyst/analysis', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(errorText || `${response.status} ${response.statusText}`);
-  }
-
-  if (response.status === 204 || response.headers.get('content-length') === '0') {
-    return undefined as T;
+    let errorMessage = `${response.status} ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.error) errorMessage = errorData.error;
+    } catch {
+      const text = await response.text().catch(() => '');
+      if (text) errorMessage = text;
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();
-}
-
-export async function analyzePrompt(prompt: string): Promise<AnalystAnalysisResponse> {
-  const payload: AnalystAnalysisRequestDto = { prompt };
-  return analystClient<AnalystAnalysisResponse>('/analysis', {
-    method: 'POST',
-    body: payload,
-  });
 }

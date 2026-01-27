@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { SendHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronRight, SendHorizontal } from 'lucide-react';
 import { Drawer } from '@/app/components/ui/Drawer';
-import { Modal } from '@/app/components/ui/Modal';
 import { analyzePrompt } from '@/lib/api/analyst';
-import type { AnalystChartResponse, AnalystAnalysisResponse } from '@/lib/api/types';
+import type { QueryResult, AnalysisMetadata, MultiQueryAnalysisResponse } from '@/lib/api/types';
 
 type ChatMessage =
   | {
@@ -17,8 +16,8 @@ type ChatMessage =
       id: string;
       role: 'assistant';
       content: string;
-      sql?: string;
-      charts?: AnalystChartResponse[];
+      queries?: QueryResult[];
+      metadata?: AnalysisMetadata;
       error?: string;
     };
 
@@ -26,14 +25,140 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function buildAssistantMessage(response: AnalystAnalysisResponse): ChatMessage {
+function buildAssistantMessage(response: MultiQueryAnalysisResponse): ChatMessage {
   return {
     id: createId(),
     role: 'assistant',
-    content: response.explanation,
-    sql: response.sql_query,
-    charts: response.charts,
+    content: response.analysis,
+    queries: response.queries,
+    metadata: response.metadata,
   };
+}
+
+interface QueryResultCardProps {
+  query: QueryResult;
+  index: number;
+}
+
+function QueryResultCard({ query, index }: QueryResultCardProps) {
+  const [showSql, setShowSql] = useState(false);
+  const [showData, setShowData] = useState(false);
+  const hasError = Boolean(query.error);
+  const hasData = query.data && query.data.length > 0;
+  const columns = hasData ? Object.keys(query.data[0]) : [];
+  const displayRows = query.data?.slice(0, 20) ?? [];
+
+  return (
+    <div
+      className={`rounded-lg border ${hasError ? 'border-red-200 bg-red-50/50' : 'border-gray-200 bg-gray-50'}`}
+    >
+      <div className="flex items-start gap-3 px-3 py-2">
+        <span
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+            hasError ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+          }`}
+        >
+          {index + 1}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium text-gray-800">{query.purpose}</div>
+          {hasError && (
+            <div className="mt-1 text-xs text-red-600">{query.error}</div>
+          )}
+          {!hasError && (
+            <div className="mt-1 text-xs text-gray-500">
+              {query.row_count} {query.row_count === 1 ? 'fila' : 'filas'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!hasError && (
+        <div className="border-t border-gray-200 px-3 py-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowSql(!showSql)}
+            className="flex w-full items-center gap-1 text-gray-600 hover:text-gray-800"
+          >
+            {showSql ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            Ver SQL
+          </button>
+          {showSql && (
+            <pre className="mt-2 whitespace-pre-wrap rounded-md bg-gray-100 p-2 font-mono text-[11px] text-gray-700">
+              {query.sql_query}
+            </pre>
+          )}
+        </div>
+      )}
+
+      {hasData && (
+        <div className="border-t border-gray-200 px-3 py-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowData(!showData)}
+            className="flex w-full items-center gap-1 text-gray-600 hover:text-gray-800"
+          >
+            {showData ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            Ver datos
+          </button>
+          {showData && (
+            <div className="mt-2 overflow-x-auto">
+              <table className="min-w-full text-left text-[11px]">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    {columns.map((col) => (
+                      <th key={col} className="whitespace-nowrap px-2 py-1 font-semibold text-gray-700">
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((row, rowIdx) => (
+                    <tr key={rowIdx} className="border-b border-gray-100 last:border-0">
+                      {columns.map((col) => (
+                        <td key={col} className="whitespace-nowrap px-2 py-1 text-gray-600">
+                          {row[col] == null ? '-' : String(row[col])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {query.row_count > 20 && (
+                <div className="mt-2 text-[10px] text-gray-400">
+                  Mostrando 20 de {query.row_count} filas
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface MetadataBadgesProps {
+  metadata: AnalysisMetadata;
+}
+
+function MetadataBadges({ metadata }: MetadataBadgesProps) {
+  const allSuccess = metadata.successful_queries === metadata.total_queries;
+  const queriesBadgeColor = allSuccess ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${queriesBadgeColor}`}>
+        {metadata.successful_queries}/{metadata.total_queries} consultas
+      </span>
+      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+        {metadata.total_rows} filas totales
+      </span>
+      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+        {metadata.execution_time_ms}ms
+      </span>
+    </div>
+  );
 }
 
 interface AnalystChatDrawerProps {
@@ -52,10 +177,6 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [lightboxImage, setLightboxImage] = useState<{ src: string; title: string } | null>(
-    null
-  );
-  const [lightboxZoom, setLightboxZoom] = useState(1);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -63,19 +184,6 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
   }, [messages, isLoading]);
 
   const canSend = useMemo(() => input.trim().length > 4 && !isLoading, [input, isLoading]);
-
-  const openLightbox = (src: string, title: string) => {
-    setLightboxZoom(1);
-    setLightboxImage({ src, title });
-  };
-
-  const closeLightbox = () => {
-    setLightboxImage(null);
-  };
-
-  const zoomIn = () => setLightboxZoom((prev) => Math.min(prev + 0.25, 3));
-  const zoomOut = () => setLightboxZoom((prev) => Math.max(prev - 0.25, 0.5));
-  const resetZoom = () => setLightboxZoom(1);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -131,40 +239,18 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
                 >
                   <div className="whitespace-pre-wrap">{message.content}</div>
 
-                  {!isUser && message.sql && (
-                    <details className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
-                      <summary className="cursor-pointer select-none text-gray-600">
-                        Ver SQL
-                      </summary>
-                      <pre className="mt-2 whitespace-pre-wrap font-mono text-[11px] text-gray-700">
-                        {message.sql}
-                      </pre>
-                    </details>
+                  {!isUser && message.metadata && (
+                    <MetadataBadges metadata={message.metadata} />
                   )}
 
-                  {!isUser && message.charts && message.charts.length > 0 && (
-                    <div className="mt-3 space-y-3">
-                      {message.charts.map((chart, index) => (
-                        <div key={`${message.id}-chart-${index}`} className="space-y-2">
-                          <div className="text-xs font-medium text-gray-600">{chart.title}</div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openLightbox(
-                                `data:image/png;base64,${chart.image_base64}`,
-                                chart.title
-                              )
-                            }
-                            className="w-full rounded-lg border border-black/10 bg-white p-0 text-left transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            aria-label={`Abrir grafico ${chart.title}`}
-                          >
-                            <img
-                              src={`data:image/png;base64,${chart.image_base64}`}
-                              alt={chart.title}
-                              className="w-full rounded-lg"
-                            />
-                          </button>
-                        </div>
+                  {!isUser && message.queries && message.queries.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {message.queries.map((query, index) => (
+                        <QueryResultCard
+                          key={query.query_id}
+                          query={query}
+                          index={index}
+                        />
                       ))}
                     </div>
                   )}
@@ -218,53 +304,6 @@ export default function AnalystChatDrawer({ isOpen, onClose }: AnalystChatDrawer
           </div>
         </form>
       </div>
-      <Modal
-        isOpen={Boolean(lightboxImage)}
-        onClose={closeLightbox}
-        title={lightboxImage?.title ?? 'Vista de grafico'}
-        size="xl"
-      >
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs text-gray-500">
-              Zoom {Math.round(lightboxZoom * 100)}%
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={zoomOut}
-                className="rounded-md border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
-              >
-                -
-              </button>
-              <button
-                type="button"
-                onClick={resetZoom}
-                className="rounded-md border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
-              >
-                100%
-              </button>
-              <button
-                type="button"
-                onClick={zoomIn}
-                className="rounded-md border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
-              >
-                +
-              </button>
-            </div>
-          </div>
-          {lightboxImage && (
-            <div className="max-h-[70vh] overflow-auto rounded-lg border border-black/10 bg-gray-50 p-3">
-              <img
-                src={lightboxImage.src}
-                alt={lightboxImage.title}
-                className="mx-auto max-w-none rounded-lg bg-white"
-                style={{ width: `${lightboxZoom * 100}%` }}
-              />
-            </div>
-          )}
-        </div>
-      </Modal>
     </Drawer>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
 import { ClientSearchCombobox } from '@/app/components/ui/ClientSearchCombobox';
 import { createTransaction, updateTransaction } from '@/lib/api/transactions';
+import { useCashBox } from '@/app/facturacion/caja-diaria/hooks/useCashBox';
 import type { Transaction } from '@/lib/api/types';
 import toast from 'react-hot-toast';
 
@@ -20,6 +21,7 @@ export function TransactionFormModal({
   onSuccess,
   transaction,
 }: TransactionFormModalProps) {
+  const { cashBox, isLoading: isCashBoxLoading, error: cashBoxError } = useCashBox();
   const [clientId, setClientId] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,14 +53,30 @@ export function TransactionFormModal({
 
     if (!validate()) return;
 
+    // Check cash box for create mode
+    if (!isEditMode) {
+      if (isCashBoxLoading) {
+        setError('Cargando caja...');
+        return;
+      }
+      if (cashBoxError) {
+        setError(cashBoxError.message || 'Error al cargar la caja');
+        return;
+      }
+      if (!cashBox || cashBox.status !== 'Open') {
+        setError('No hay caja abierta. Abre caja antes de crear una transaccion.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       if (isEditMode && transaction) {
-        await updateTransaction(transaction.id, { clientId });
+        await updateTransaction(transaction.id, { clientId, cashBoxId: transaction.cashBoxId });
         toast.success('Transaccion actualizada correctamente');
       } else {
-        await createTransaction({ clientId });
+        await createTransaction({ clientId, cashBoxId: cashBox!.id });
         toast.success('Transaccion creada correctamente');
       }
 
