@@ -1,7 +1,7 @@
-import type { AnalystAnalysisRequestDto, AnalystAnalysisResponse } from './types';
+import type { AnalystAnalysisRequestDto, MultiQueryAnalysisResponse } from './types';
 
-export async function analyzePrompt(prompt: string): Promise<AnalystAnalysisResponse> {
-  const payload: AnalystAnalysisRequestDto = { prompt };
+export async function analyzePrompt(prompt: string, maxQueries = 5): Promise<MultiQueryAnalysisResponse> {
+  const payload: AnalystAnalysisRequestDto = { prompt, max_queries: maxQueries };
 
   const response = await fetch('/api/analyst/analysis', {
     method: 'POST',

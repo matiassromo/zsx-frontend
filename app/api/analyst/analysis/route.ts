@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { AnalystAnalysisRequestDto, AnalystAnalysisResponse } from '@/lib/api/types';
+import type { AnalystAnalysisRequestDto, MultiQueryAnalysisResponse } from '@/lib/api/types';
 
 const ANALYST_API_URL = process.env.ANALYST_API_URL || 'http://localhost:8000/api/v1';
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data: AnalystAnalysisResponse = await response.json();
+    const data: MultiQueryAnalysisResponse = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error('[analyst-proxy] Error interno:', error);

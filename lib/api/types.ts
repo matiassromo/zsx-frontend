@@ -261,17 +261,27 @@ export interface TransactionDetail {
 export interface AnalystAnalysisRequestDto {
   prompt: string;
   exclude_tables?: string[] | null;
-  generate_charts?: boolean | null;
+  max_queries?: number | null;
 }
 
-export interface AnalystChartResponse {
-  type: string;
-  title: string;
-  image_base64: string;
-}
-
-export interface AnalystAnalysisResponse {
-  explanation: string;
+export interface QueryResult {
+  query_id: string;
+  purpose: string;
   sql_query: string;
-  charts: AnalystChartResponse[];
+  data: Record<string, unknown>[];
+  row_count: number;
+  error: string | null;
+}
+
+export interface AnalysisMetadata {
+  total_queries: number;
+  successful_queries: number;
+  total_rows: number;
+  execution_time_ms: number;
+}
+
+export interface MultiQueryAnalysisResponse {
+  analysis: string;
+  queries: QueryResult[];
+  metadata: AnalysisMetadata;
 }
