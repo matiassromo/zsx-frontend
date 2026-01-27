@@ -35,7 +35,9 @@ function formatTime(dateString: string) {
 
 export function DailyReportCard({ summary }: DailyReportCardProps) {
   const { cashBox, totalPayments, cash, transfer, openTransactions, closedTransactions } = summary;
-  const closingBalance = cashBox.closingBalance ?? (cashBox.openingBalance + totalPayments);
+  const manualExpense = (summary as any).manualExpense ?? 0;
+  const closingBalance = cashBox.closingBalance ?? (cashBox.openingBalance + totalPayments - manualExpense);
+
   const totalTransactions = openTransactions + closedTransactions;
 
   return (
@@ -74,13 +76,13 @@ export function DailyReportCard({ summary }: DailyReportCardProps) {
               value={`+${formatCurrency(totalPayments)}`}
               valueClassName="text-green-600"
             />
+
             <div className="border-t border-gray-200 pt-2">
-              <SummaryRow
-                label="Caja de Cierre"
-                value={formatCurrency(closingBalance)}
-                valueClassName="text-lg font-bold text-blue-600"
-                labelClassName="font-medium"
-              />
+            <SummaryRow
+              label="Egresos Totales"
+              value={`-${formatCurrency(manualExpense)}`}
+              valueClassName="text-red-600"
+            />
             </div>
           </div>
         </div>

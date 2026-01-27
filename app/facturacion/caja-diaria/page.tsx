@@ -10,6 +10,10 @@ import { OpenCashBoxModal } from './components/OpenCashBoxModal';
 import { CloseCashBoxDialog } from './components/CloseCashBoxDialog';
 import { ExportPdfButton } from './components/ExportPdfButton';
 import { reopenCashBox } from '@/lib/api/cash-boxes';
+import { ManualCashMovementModal, ManualMovementKind } from './components/ManualCashMovementModal';
+import { ManualMovementsHistory } from './components/ManualMovementsHistory';
+
+
 
 export default function CajaDiariaPage() {
   const { cashBox, summary, isLoading, error, refetch } = useCashBox();
@@ -17,6 +21,9 @@ export default function CajaDiariaPage() {
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
   const [reopenError, setReopenError] = useState('');
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [manualKind, setManualKind] = useState<ManualMovementKind>('Ingreso');
+
   
 
   const handleOpenSuccess = () => refetch();
@@ -113,6 +120,25 @@ export default function CajaDiariaPage() {
               Cargando métricas...
             </div>
           )}
+
+          {summary && (
+          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+            <button
+              onClick={() => { setManualKind('Ingreso'); setManualModalOpen(true); }}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-green-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-600"
+            >
+              + Ingreso
+            </button>
+
+            <button
+              onClick={() => { setManualKind('Egreso'); setManualModalOpen(true); }}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-red-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-600"
+            >
+              + Egreso
+            </button>
+          </div>
+        )}
+
           
           {/* Transaction counts - solo si hay summary */}
           {summary && (
@@ -126,6 +152,11 @@ export default function CajaDiariaPage() {
               </div>
             </div>
           )}
+
+                    {summary && (
+            <ManualMovementsHistory movements={(summary as any).manualMovements ?? []} />
+          )}
+
 
           <div className="flex justify-end">
             <button
@@ -163,8 +194,34 @@ export default function CajaDiariaPage() {
       )}
 
       {/* Modals */}
-      <OpenCashBoxModal isOpen={isOpenModalOpen} onClose={() => setIsOpenModalOpen(false)} onSuccess={handleOpenSuccess} />
-      <CloseCashBoxDialog isOpen={isCloseDialogOpen} onClose={() => setIsCloseDialogOpen(false)} onSuccess={handleCloseSuccess} summary={summary} />
+      <OpenCashBoxModal
+        isOpen={isOpenModalOpen}
+        onClose={() => setIsOpenModalOpen(false)}
+        onSuccess={handleOpenSuccess}
+      />
+
+      <CloseCashBoxDialog
+        isOpen={isCloseDialogOpen}
+        onClose={() => setIsCloseDialogOpen(false)}
+        onSuccess={handleCloseSuccess}
+        summary={summary}
+      />
+
+      {cashBox && status === 'Open' && summary && (
+        <ManualCashMovementModal
+          isOpen={manualModalOpen}
+          onClose={() => setManualModalOpen(false)}
+          cashBoxId={cashBox.id}
+          kind={manualKind}
+          maxAmount={
+            manualKind === 'Egreso'
+              ? (summary.cashBox.openingBalance + (summary.totalPayments ?? 0) - ((summary as any).manualExpense ?? 0))
+              : undefined
+          }
+          onSuccess={refetch}
+        />
+      )}
+
     </div>
   );
 }
