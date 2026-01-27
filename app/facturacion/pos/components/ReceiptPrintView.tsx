@@ -2,26 +2,87 @@
 
 import type { TransactionDetail } from '@/lib/api/types';
 
+function deepFindString(obj: any, maxDepth = 4): string | undefined {
+  const seen = new Set<any>();
+
+  function walk(v: any, depth: number): string | undefined {
+    if (depth > maxDepth) return undefined;
+    if (v === null || v === undefined) return undefined;
+    if (typeof v === 'string') {
+      const s = v.trim();
+      // ignora strings tipo GUID o vacíos
+      if (!s) return undefined;
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return undefined;
+      return s;
+    }
+    if (typeof v !== 'object') return undefined;
+    if (seen.has(v)) return undefined;
+    seen.add(v);
+
+    if (Array.isArray(v)) {
+      for (const x of v) {
+        const r = walk(x, depth + 1);
+        if (r) return r;
+      }
+      return undefined;
+    }
+
+    // prioriza keys que suelen ser nombres
+    const preferredKeys = ['name', 'nombre', 'description', 'descripcion', 'label', 'title', 'concept'];
+    for (const k of preferredKeys) {
+      if (k in v) {
+        const r = walk(v[k], depth + 1);
+        if (r) return r;
+      }
+    }
+
+    for (const k of Object.keys(v)) {
+      const r = walk(v[k], depth + 1);
+      if (r) return r;
+    }
+    return undefined;
+  }
+
+  return walk(obj, 0);
+}
+
+function guessLabelWithContext(sectionTitle: string, item: any, idx: number): string {
+  // 1) intenta tu lógica actual
+  const base = guessLabel(item);
+  if (base && base !== 'Item') return base;
+
+  // 2) si hay IDs típicos, muéstralos
+  const idHint =
+    pickFirst(item, [
+      'entranceTypeId',
+      'entranceId',
+      'barProductId',
+      'productId',
+      'keyId',
+      'lockerKeyId',
+      'accessCardTypeId',
+      'accessCardId',
+      'id',
+    ]) ?? '';
+
+  const idText = safeStr(idHint);
+  if (idText) return `${sectionTitle} (${idText.slice(0, 8)})`;
+
+  // 3) best-effort: busca cualquier string dentro del objeto
+  const deep = deepFindString(item);
+  if (deep) return deep;
+
+  // 4) fallback decente
+  return `${sectionTitle} #${idx + 1}`;
+}
+
+
 function money(n: unknown) {
   const v = typeof n === 'number' ? n : Number(n ?? 0);
   return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(
     Number.isFinite(v) ? v : 0
   );
 }
-
-function hasContent(rows: any[]): boolean {
-  if (!Array.isArray(rows) || rows.length === 0) return false;
-
-  // considera “contenido” si hay al menos una fila con total > 0
-  return rows.some((it) => guessTotal(it) > 0);
-}
-
-function cleanRows(rows: any[]): any[] {
-  if (!Array.isArray(rows)) return [];
-  // elimina filas con total 0 (evita que aparezcan “vacías”)
-  return rows.filter((it) => guessTotal(it) > 0);
-}
-
 
 function dt(dateString?: string | null) {
   if (!dateString) return '';
@@ -40,13 +101,44 @@ function safeStr(v: unknown) {
 }
 
 function toNum(v: unknown): number {
-  const n = Number(v);
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (v === null || v === undefined) return 0;
+
+  let s = String(v).trim();
+  if (!s) return 0;
+
+  s = s.replace(/[^\d,.-]/g, '');
+
+  if (s.includes(',') && !s.includes('.')) s = s.replace(',', '.');
+
+  if (s.includes(',') && s.includes('.')) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56 -> 1234.56
+    } else {
+      s = s.replace(/,/g, ''); // 1,234.56 -> 1234.56
+    }
+  }
+
+  const n = Number(s);
   return Number.isFinite(n) ? n : 0;
+}
+
+function getPath(obj: any, path: string) {
+  if (!obj || !path) return undefined;
+  const parts = path.split('.');
+  let cur = obj;
+  for (const p of parts) {
+    if (cur == null) return undefined;
+    cur = cur[p];
+  }
+  return cur;
 }
 
 function pickFirst<T = any>(obj: any, keys: string[]): T | undefined {
   for (const k of keys) {
-    const val = obj?.[k];
+    const val = k.includes('.') ? getPath(obj, k) : obj?.[k];
     if (val !== undefined && val !== null && String(val).trim() !== '') return val;
   }
   return undefined;
@@ -54,37 +146,98 @@ function pickFirst<T = any>(obj: any, keys: string[]): T | undefined {
 
 function guessLabel(item: any): string {
   const label = pickFirst(item, [
+    // directos
     'name',
     'productName',
     'description',
     'detail',
-    'keyCode',
-    'plate',
+    'notes',
     'type',
     'zone',
-    'notes',
+    'plate',
+    'keyCode',
+
+    // anidados típicos
+    'entranceType.name',
+    'entranceType.description',
+    'entrance.name',
+    'ticketType.name',
+
+    'barProduct.name',
+    'barProduct.productName',
+    'product.name',
+    'product.description',
+    'item.name',
+    'item.productName',
+
+    'accessCardType.name',
+    'accessCardType.description',
+    'accessCard.name',
+
+    'key.code',
+    'lockerKey.code',
   ]);
+
   return safeStr(label) || 'Item';
 }
 
 function guessQty(item: any): number {
-  const qty = pickFirst(item, ['quantity', 'qty', 'uses', 'hours', 'minutes', 'count']);
+  const qty = pickFirst(item, [
+    'quantity',
+    'qty',
+    'count',
+    'uses',
+    'hours',
+    'minutes',
+
+    // anidados
+    'item.quantity',
+    'detail.quantity',
+    'line.quantity',
+  ]);
   const n = toNum(qty);
   return n > 0 ? n : 1;
 }
 
 function guessUnit(item: any): number | null {
-  const unit = pickFirst(item, ['unitPrice', 'price', 'rate', 'value']);
+  const unit = pickFirst(item, [
+    'unitPrice',
+    'price',
+    'rate',
+    'value',
+    'unit',
+    'unit_amount',
+
+    // anidados
+    'entranceType.price',
+    'barProduct.unitPrice',
+    'product.unitPrice',
+    'accessCardType.price',
+    'item.unitPrice',
+    'detail.unitPrice',
+  ]);
   const n = toNum(unit);
   return n > 0 ? n : null;
 }
 
 function guessTotal(item: any): number {
-  const total = pickFirst(item, ['total', 'amount', 'lineTotal', 'subtotal']);
+  const total = pickFirst(item, [
+    'total',
+    'amount',
+    'lineTotal',
+    'subtotal',
+    'totalPrice',
+    'total_amount',
+
+    // anidados
+    'item.total',
+    'detail.total',
+    'line.total',
+  ]);
+
   const n = toNum(total);
   if (n !== 0) return n;
 
-  // fallback: qty * unit (si existe)
   const q = guessQty(item);
   const u = guessUnit(item);
   if (u !== null) return q * u;
@@ -97,13 +250,9 @@ function sumSection(list: any[]): number {
   return list.reduce((acc, it) => acc + guessTotal(it), 0);
 }
 
-function SectionTable({ rows }: { rows: any[] }) {
+function SectionTable({ rows, sectionTitle }: { rows: any[]; sectionTitle: string }) {
   if (!Array.isArray(rows) || rows.length === 0) {
-    return (
-      <div style={{ fontSize: 11, color: '#6b7280', padding: '10px 12px' }}>
-        Sin registros
-      </div>
-    );
+    return <div style={{ fontSize: 11, color: '#6b7280', padding: '10px 12px' }}>Sin registros</div>;
   }
 
   return (
@@ -124,7 +273,7 @@ function SectionTable({ rows }: { rows: any[] }) {
 
           return (
             <tr key={idx} style={{ background: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
-              <td style={tdLeft}>{guessLabel(it)}</td>
+              <td style={tdLeft}>{guessLabelWithContext(sectionTitle, it, idx)}</td>
               <td style={tdRight}>{qty}</td>
               <td style={tdRight}>{unit === null ? '—' : money(unit)}</td>
               <td style={tdRightStrong}>{money(total)}</td>
@@ -208,13 +357,32 @@ function Card({
       >
         <div>
           <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.2 }}>{title}</div>
-          {subtitle ? (
-            <div style={{ fontSize: 10, opacity: 0.85, marginTop: 2 }}>{subtitle}</div>
-          ) : null}
+          {subtitle ? <div style={{ fontSize: 10, opacity: 0.85, marginTop: 2 }}>{subtitle}</div> : null}
         </div>
         {right}
       </div>
       <div>{children}</div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  strong,
+  accent,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
+      <span style={{ color: '#374151', fontWeight: 700 }}>{label}</span>
+      <span style={{ fontWeight: strong ? 900 : 700, color: accent ? '#b91c1c' : '#111827', whiteSpace: 'nowrap' }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -244,24 +412,26 @@ export function ReceiptPrintView({
   const status = safeStr((transaction as any)?.status) || '—';
   const receiptNo = safeStr((transaction as any)?.id);
 
-const rawSections = [
-  { title: 'Entradas', rows: (entrances as any[]) ?? [] },
-  { title: 'Llaves', rows: (keys as any[]) ?? [] },
-  { title: 'Parqueo', rows: (parkings as any[]) ?? [] },
-  { title: 'Bar', rows: (barOrders as any[]) ?? [] },
-  { title: 'Tarjetas de pases', rows: (accessCards as any[]) ?? [] },
-  { title: 'Pagos', rows: (((transaction as any)?.payments ?? []) as any[]) ?? [] },
-];
+  // Aplana Bar si viene con items/details/lines
+  const barRows =
+    (barOrders as any[] | undefined)?.flatMap((o) => o?.items ?? o?.details ?? o?.lines ?? [o]) ?? [];
 
-const sections = rawSections
-  .map((s) => {
-    const cleaned = cleanRows(s.rows);
-    const subtotal = sumSection(cleaned);
-    return { ...s, rows: cleaned, subtotal };
-  })
-  // ✅ elimina secciones sin contenido o subtotal 0
-  .filter((s) => hasContent(s.rows) && s.subtotal > 0);
+  const rawSections = [
+    { title: 'Entradas', rows: (entrances as any[]) ?? [] },
+    { title: 'Llaves', rows: (keys as any[]) ?? [] },
+    { title: 'Parqueo', rows: (parkings as any[]) ?? [] },
+    { title: 'Bar', rows: barRows },
+    { title: 'Tarjetas de pases', rows: (accessCards as any[]) ?? [] },
+    { title: 'Pagos', rows: (((transaction as any)?.payments ?? []) as any[]) ?? [] },
+  ];
 
+  const sections = rawSections
+    .map((s) => {
+      const rows = Array.isArray(s.rows) ? s.rows : [];
+      const subtotal = sumSection(rows);
+      return { ...s, rows, subtotal };
+    })
+    .filter((s) => s.rows.length > 0);
 
   return (
     <div
@@ -270,41 +440,22 @@ const sections = rawSections
         padding: 22,
         background: '#ffffff',
         color: '#111827',
-        fontFamily:
-          'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
       }}
     >
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
-        <div
-          style={{
-            width: 150,
-            height: 60,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <img
-            src={logoSrc}
-            alt="Logo"
-            style={{ maxWidth: '150px', maxHeight: '60px', objectFit: 'contain' }}
-          />
+        <div style={{ width: 150, height: 60, display: 'flex', alignItems: 'center' }}>
+          <img src={logoSrc} alt="Logo" style={{ maxWidth: '150px', maxHeight: '60px', objectFit: 'contain' }} />
         </div>
 
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 0.2 }}>
-            Piscina Zero Stress
-          </div>
-          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-            Comprobante de cuenta
-          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 0.2 }}>Piscina Zero Stress</div>
+          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>Comprobante de cuenta</div>
         </div>
 
         <div style={{ textAlign: 'right', minWidth: 220 }}>
           <div style={{ fontSize: 10, color: '#6b7280' }}>Fecha</div>
-          <div style={{ fontSize: 12, fontWeight: 800 }}>
-            {dt(closedAt ?? openedAt)}
-          </div>
+          <div style={{ fontSize: 12, fontWeight: 800 }}>{dt(closedAt ?? openedAt)}</div>
           <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6 }}>Estado</div>
           <div
             style={{
@@ -324,7 +475,6 @@ const sections = rawSections
         </div>
       </div>
 
-      {/* Meta strip */}
       <div
         style={{
           border: '1px solid #e5e7eb',
@@ -342,13 +492,9 @@ const sections = rawSections
 
           <div style={{ minWidth: 230 }}>
             <div style={{ fontSize: 10, color: '#6b7280' }}>Cliente</div>
-            <div style={{ fontSize: 12, fontWeight: 900 }}>
-              {safeStr(client?.name) || 'Sin cliente'}
-            </div>
+            <div style={{ fontSize: 12, fontWeight: 900 }}>{safeStr(client?.name) || 'Sin cliente'}</div>
             {safeStr(client?.documentNumber) ? (
-              <div style={{ fontSize: 10, color: '#6b7280' }}>
-                CI: {safeStr(client?.documentNumber)}
-              </div>
+              <div style={{ fontSize: 10, color: '#6b7280' }}>CI: {safeStr(client?.documentNumber)}</div>
             ) : null}
           </div>
 
@@ -365,29 +511,20 @@ const sections = rawSections
         </div>
       </div>
 
-      {/* Sections */}
       <div style={{ display: 'grid', gap: 12 }}>
         {sections.map((s) => (
-        <Card
+          <Card
             key={s.title}
             title={s.title}
             right={<div style={{ fontSize: 11, fontWeight: 900 }}>Subtotal: {money(s.subtotal)}</div>}
-        >
-            <SectionTable rows={s.rows} />
-        </Card>
+          >
+            <SectionTable rows={s.rows} sectionTitle={s.title} />
+          </Card>
         ))}
 
       </div>
 
-      {/* Totals */}
-      <div
-        style={{
-          marginTop: 14,
-          border: '1px solid #111827',
-          borderRadius: 14,
-          overflow: 'hidden',
-        }}
-      >
+      <div style={{ marginTop: 14, border: '1px solid #111827', borderRadius: 14, overflow: 'hidden' }}>
         <div style={{ background: '#111827', color: '#fff', padding: '10px 12px' }}>
           <div style={{ fontSize: 12, fontWeight: 900 }}>Totales</div>
         </div>
@@ -423,40 +560,6 @@ const sections = rawSections
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  strong,
-  accent,
-}: {
-  label: string;
-  value: string;
-  strong?: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: 12,
-        padding: '6px 0',
-      }}
-    >
-      <span style={{ color: '#374151', fontWeight: 700 }}>{label}</span>
-      <span
-        style={{
-          fontWeight: strong ? 900 : 700,
-          color: accent ? '#b91c1c' : '#111827',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {value}
-      </span>
     </div>
   );
 }
