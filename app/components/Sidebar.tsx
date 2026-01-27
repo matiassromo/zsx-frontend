@@ -267,7 +267,7 @@ export function Sidebar() {
               Z
             </div>
             <div className="leading-tight">
-              <div className="font-semibold text-gray-900">Zero Stress</div>
+              <div className="font-semibold text-gray-900">Zero Stress Pool Management System</div>
               <div className="text-xs text-gray-500">Panel Único</div>
             </div>
           </div>

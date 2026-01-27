@@ -50,14 +50,16 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="rounded-2xl bg-white p-8 shadow-lg">
           {/* Logo */}
-          <div className="mb-8 flex flex-col items-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-blue-500 text-2xl font-bold text-white">
-              Z
-            </div>
-            <h1 className="mt-4 text-2xl font-semibold text-gray-900">
-              Zero Stress
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">Inicie sesion para continuar</p>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-blue-500 text-2xl font-bold text-white">
+            Z
+          </div>
+          <h1 className="mt-4 text-2xl font-semibold text-gray-900">
+            Zero Stress Pool Management System
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Inicie sesión para continuar
+          </p>
           </div>
 
           {/* Form */}
