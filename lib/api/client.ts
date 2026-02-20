@@ -89,26 +89,6 @@ export async function apiClient<T>(
 
   const response = await fetch(url, config);
 
-  // 401: limpiar auth y avisar
-if (!response.ok) {
-  const raw = await response.text().catch(() => "");
-  let msg = raw;
-
-  // intenta extraer message del típico ProblemDetails / {message:""}
-  try {
-    const j = JSON.parse(raw);
-    msg =
-      j?.message ||
-      j?.title ||
-      j?.error ||
-      (typeof j === "string" ? j : raw);
-  } catch {
-    // raw ya es texto
-  }
-
-  throw new ApiError(response.status, response.statusText, msg);
-}
-
   // ✅ Lecturas: 404 = "no existe" (ej: CashBoxes/today sin caja)
   if (method === "GET" && response.status === 404) {
     return undefined;
@@ -119,10 +99,24 @@ if (!response.ok) {
     return undefined;
   }
 
-  // Otros errores reales
+  // Errores HTTP reales
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new ApiError(response.status, response.statusText, errorText);
+    const raw = await response.text().catch(() => "");
+    let msg = raw;
+
+    // intenta extraer message del típico ProblemDetails / {message:""}
+    try {
+      const j = JSON.parse(raw);
+      msg =
+        j?.message ||
+        j?.title ||
+        j?.error ||
+        (typeof j === "string" ? j : raw);
+    } catch {
+      // raw ya es texto
+    }
+
+    throw new ApiError(response.status, response.statusText, msg);
   }
 
   // ✅ Mutaciones: notificar
