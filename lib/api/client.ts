@@ -1,4 +1,4 @@
-import { emitZsEvent } from "@/lib/events";
+﻿import { emitZsEvent } from "@/lib/events";
 import {
   getStoredTokens,
   clearAuth,
@@ -83,9 +83,6 @@ export async function apiClient<T>(
 
   const config: RequestInit = { method, headers };
   if (body !== undefined) config.body = JSON.stringify(body);
-
-  console.log("[apiClient]", method, url);
-
 
   const response = await fetch(url, config);
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import InfoBar from '@/app/components/InfoBar';
@@ -26,7 +26,7 @@ export default function AccessCardsPage() {
     return accessCards.filter((card) => {
       // Search by card ID or owner name
       const matchesId = card.id.toLowerCase().includes(query);
-      const matchesOwner = card.owner?.name.toLowerCase().includes(query);
+      const matchesOwner = card.owner?.name?.toLowerCase().includes(query) ?? false;
       return matchesId || matchesOwner;
     });
   }, [accessCards, searchQuery]);
@@ -65,7 +65,7 @@ export default function AccessCardsPage() {
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Buscar por dueno o ID... (ej: M, Ma, Matias)"
+          placeholder="Buscar por dueño o ID... (ej: M, Ma, Matías)"
         />
       </div>
 

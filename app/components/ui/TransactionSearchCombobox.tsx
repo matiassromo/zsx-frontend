@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
@@ -18,8 +18,8 @@ export function TransactionSearchCombobox({
   value,
   onChange,
   error,
-  label = 'Transaccion',
-  placeholder = 'Buscar transaccion...',
+  label = 'Transacción',
+  placeholder = 'Buscar transacción...',
   filterStatus = 'Open',
 }: TransactionSearchComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);

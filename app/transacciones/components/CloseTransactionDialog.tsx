@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
@@ -28,11 +28,11 @@ export function CloseTransactionDialog({
 
     try {
       await closeTransaction(transaction.id);
-      toast.success('Transaccion cerrada correctamente');
+      toast.success('Transacción cerrada correctamente');
       onSuccess();
       onClose();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al cerrar transaccion';
+      const message = error instanceof Error ? error.message : 'Error al cerrar transacción';
       toast.error(message);
     } finally {
       setIsClosing(false);
@@ -44,8 +44,8 @@ export function CloseTransactionDialog({
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={handleConfirm}
-      title="Cerrar Transaccion"
-      message={`¿Estas seguro de que deseas cerrar la transaccion de "${transaction?.client?.name}"? Una vez cerrada, no podra ser editada.`}
+      title="Cerrar Transacción"
+      message={`¿Estás seguro de que deseas cerrar la transacción de "${transaction?.client?.name}"? Una vez cerrada, no podrá ser editada.`}
       confirmLabel="Cerrar"
       cancelLabel="Cancelar"
       variant="default"

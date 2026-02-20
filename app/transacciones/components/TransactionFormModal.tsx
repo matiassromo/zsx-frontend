@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
@@ -64,7 +64,7 @@ export function TransactionFormModal({
         return;
       }
       if (!cashBox || cashBox.status !== 'Open') {
-        setError('No hay caja abierta. Abre caja antes de crear una transaccion.');
+        setError('No hay caja abierta. Abre caja antes de crear una transacción.');
         return;
       }
     }
@@ -74,16 +74,16 @@ export function TransactionFormModal({
     try {
       if (isEditMode && transaction) {
         await updateTransaction(transaction.id, { clientId, cashBoxId: transaction.cashBoxId });
-        toast.success('Transaccion actualizada correctamente');
+        toast.success('Transacción actualizada correctamente');
       } else {
         await createTransaction({ clientId, cashBoxId: cashBox!.id });
-        toast.success('Transaccion creada correctamente');
+        toast.success('Transacción creada correctamente');
       }
 
       onSuccess();
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al guardar transaccion';
+      const message = err instanceof Error ? err.message : 'Error al guardar transacción';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -94,7 +94,7 @@ export function TransactionFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? 'Editar Transaccion' : 'Nueva Transaccion'}
+      title={isEditMode ? 'Editar Transacción' : 'Nueva Transacción'}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

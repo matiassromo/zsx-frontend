@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
@@ -28,11 +28,11 @@ export function DeleteTransactionDialog({
 
     try {
       await deleteTransaction(transaction.id);
-      toast.success('Transaccion eliminada correctamente');
+      toast.success('Transacción eliminada correctamente');
       onSuccess();
       onClose();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al eliminar transaccion';
+      const message = error instanceof Error ? error.message : 'Error al eliminar transacción';
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -44,8 +44,8 @@ export function DeleteTransactionDialog({
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={handleConfirm}
-      title="Eliminar Transaccion"
-      message={`¿Estas seguro de que deseas eliminar la transaccion de "${transaction?.client?.name}"? Esta accion no se puede deshacer.`}
+      title="Eliminar Transacción"
+      message={`¿Estás seguro de que deseas eliminar la transacción de "${transaction?.client?.name}"? Esta acción no se puede deshacer.`}
       confirmLabel="Eliminar"
       cancelLabel="Cancelar"
       variant="danger"

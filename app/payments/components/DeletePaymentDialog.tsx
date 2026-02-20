@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
@@ -45,7 +45,7 @@ export function DeletePaymentDialog({
       onClose={onClose}
       onConfirm={handleConfirm}
       title="Eliminar Pago"
-      message="Estas seguro de que deseas eliminar este pago? Esta accion no se puede deshacer."
+      message="¿Estás seguro de que deseas eliminar este pago? Esta acción no se puede deshacer."
       confirmLabel="Eliminar"
       cancelLabel="Cancelar"
       variant="danger"

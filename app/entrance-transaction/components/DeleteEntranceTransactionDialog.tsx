@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
@@ -45,7 +45,7 @@ export function DeleteEntranceTransactionDialog({
       onClose={onClose}
       onConfirm={handleConfirm}
       title="Eliminar Entrada"
-      message="Estas seguro de que deseas eliminar esta entrada? Esta accion no se puede deshacer."
+      message="¿Estás seguro de que deseas eliminar esta entrada? Esta acción no se puede deshacer."
       confirmLabel="Eliminar"
       cancelLabel="Cancelar"
       variant="danger"

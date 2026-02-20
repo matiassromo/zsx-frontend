@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import InfoBar from '@/app/components/InfoBar';
@@ -48,7 +48,7 @@ export default function TransaccionesPage() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3">
           <CreateButton
-            label="Nueva transaccion"
+            label="Nueva transacción"
             onClick={() => setIsCreateModalOpen(true)}
             disabled={!isCashBoxOpen}
           />

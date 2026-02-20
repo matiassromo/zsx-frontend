@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { CashBoxSummary } from '@/lib/api/types';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -12,7 +12,7 @@ interface CashBoxMetricsProps {
 export function CashBoxMetrics({ summary }: CashBoxMetricsProps) {
   const { cashBox, totalPayments, cash, transfer } = summary;
 
-  const manualExpense = (summary as any).manualExpense ?? 0;
+  const manualExpense = summary.manualExpense ?? 0;
   const currentBalance = cashBox.openingBalance + (totalPayments ?? 0) - manualExpense;
 
   return (

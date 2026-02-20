@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import InfoBar from '@/app/components/InfoBar';
@@ -52,8 +52,6 @@ export default function PosPage() {
   // ✅ Caja abierta se decide con la caja real del día
   const isCashBoxOpen = todayCashBox?.status === 'Open';
 
-  console.log("POS todayCashBox:", todayCashBox);
-console.log("POS cashBoxError:", cashBoxError?.message);
 
 
   return (
@@ -67,7 +65,7 @@ console.log("POS cashBoxError:", cashBoxError?.message);
     )}
 
 
-      {!isCashBoxLoading && !isCashBoxOpen && (
+      {!isCashBoxLoading && !isCashBoxOpen && !cashBoxError && (
         <div className="mt-4 rounded-md bg-yellow-50 border border-yellow-200 p-4">
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

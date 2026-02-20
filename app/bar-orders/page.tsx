@@ -1,7 +1,3 @@
-// BarOrdersPage.tsx (mismo archivo que pegaste)
-// Cambios: botones de acciones en BarOrdersTable y TransactionsTable con el mismo estilo "icon buttons"
-// (Editar + Cerrar + Eliminar)
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -113,7 +109,7 @@ function BarOrdersTable({
             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ordenes de bar</h3>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No hay órdenes de bar</h3>
         <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva orden.</p>
       </div>
     );
@@ -124,7 +120,7 @@ function BarOrdersTable({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaccion</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transacción</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
             <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
             <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th>
@@ -244,10 +240,10 @@ function BarOrderFormModal({
 
   const validate = (): boolean => {
     const nextErrors: Record<string, string> = {};
-    if (!transactionId) nextErrors.transactionId = 'Debe seleccionar una transaccion';
+    if (!transactionId) nextErrors.transactionId = 'Debe seleccionar una transacción';
     if (selectedProducts.length === 0) nextErrors.products = 'Debe agregar al menos un producto';
     if (selectedProducts.some((item) => item.qty <= 0 || Number.isNaN(item.qty))) nextErrors.products = 'La cantidad debe ser mayor a cero';
-    if (selectedProducts.some((item) => item.unitPrice < 0 || Number.isNaN(item.unitPrice))) nextErrors.products = 'El precio debe ser un numero positivo';
+    if (selectedProducts.some((item) => item.unitPrice < 0 || Number.isNaN(item.unitPrice))) nextErrors.products = 'El precio debe ser un número positivo';
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -285,13 +281,118 @@ function BarOrderFormModal({
           value={transactionId}
           onChange={setTransactionId}
           error={errors.transactionId}
-          label="Transaccion (Cliente)"
-          placeholder="Buscar transaccion abierta..."
+          label="Transacción (Cliente)"
+          placeholder="Buscar transacción abierta..."
           filterStatus="Open"
         />
 
-        {/* ... (resto del modal igual) ... */}
-        {/* NO se cambió el modal porque pediste solo botones de tablas */}
+        {/* Product search */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Buscar producto</label>
+          <Input
+            type="text"
+            placeholder="Nombre del producto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        {/* Product list */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Productos disponibles
+          </div>
+          <div className="max-h-48 overflow-y-auto divide-y divide-gray-100">
+            {isLoading ? (
+              <div className="px-3 py-4 text-sm text-gray-500 text-center">Cargando productos...</div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="px-3 py-4 text-sm text-gray-500 text-center">No se encontraron productos</div>
+            ) : (
+              filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => handleAddProduct(product)}
+                  className="w-full flex items-center justify-between px-3 py-2 hover:bg-blue-50 text-left transition-colors"
+                >
+                  <span className="text-sm font-medium text-gray-900">{product.name}</span>
+                  <span className="text-sm text-gray-500 ml-2">{formatCurrency(product.unitPrice)}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Selected products */}
+        {selectedProducts.length > 0 && (
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Productos seleccionados
+            </div>
+            <div className="divide-y divide-gray-100">
+              {selectedProducts.map((item) => (
+                <div key={item.product.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className="flex-1 text-sm font-medium text-gray-900 truncate">{item.product.name}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        item.qty <= 1
+                          ? handleRemoveProduct(item.product.id)
+                          : handleUpdateProduct(item.product.id, 'qty', item.qty - 1)
+                      }
+                      className="w-7 h-7 flex items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-100 text-sm font-bold"
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium">{item.qty}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateProduct(item.product.id, 'qty', item.qty + 1)}
+                      className="w-7 h-7 flex items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-100 text-sm font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="w-20 text-right text-sm text-gray-700">{formatCurrency(item.qty * item.unitPrice)}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveProduct(item.product.id)}
+                    className="text-red-400 hover:text-red-600 transition-colors"
+                    title="Quitar producto"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="bg-gray-50 px-3 py-2 flex justify-between items-center">
+              <span className="text-sm font-semibold text-gray-700">Total</span>
+              <span className="text-sm font-bold text-gray-900">{formatCurrency(selectedTotal)}</span>
+            </div>
+          </div>
+        )}
+
+        {errors.products && (
+          <p className="text-sm text-red-600">{errors.products}</p>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Creando...' : 'Crear orden'}
+          </button>
+        </div>
       </form>
     </Modal>
   );
@@ -322,7 +423,7 @@ function TransactionsTable({
           />
         </svg>
         <h3 className="mt-2 text-sm font-medium text-gray-900">No hay transacciones</h3>
-        <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva transaccion.</p>
+        <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva transacción.</p>
       </div>
     );
   }
@@ -414,7 +515,7 @@ export default function BarOrdersPage() {
       const data = await getBarOrders();
       setOrders(data);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al cargar ordenes';
+      const message = error instanceof Error ? error.message : 'Error al cargar órdenes';
       toast.error(message);
       setOrders([]);
     } finally {
@@ -444,7 +545,7 @@ export default function BarOrdersPage() {
 
   return (
     <div className="space-y-4">
-      <InfoBar title="Ordenes de bar" />
+      <InfoBar title="Órdenes de Bar" />
 
       <div className="flex justify-between items-center">
         <CreateButton label="Nueva orden" onClick={() => setIsCreateOpen(true)} />
@@ -459,7 +560,7 @@ export default function BarOrdersPage() {
         onClose={() => setDeletingOrder(null)}
         onConfirm={handleDelete}
         title="Eliminar orden"
-        message="Estas seguro de que deseas eliminar esta orden? Esta accion no se puede deshacer."
+        message="¿Estás seguro de que deseas eliminar esta orden? Esta acción no se puede deshacer."
         confirmLabel="Eliminar"
         variant="danger"
         isLoading={isDeleting}

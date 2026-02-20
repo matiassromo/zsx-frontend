@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { getPayments } from "@/lib/api/payments";
@@ -154,8 +154,8 @@ export default function ReporteVentasPage() {
     try {
       const list = await getPayments();
       setPayments(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.message ?? "No se pudo cargar pagos.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "No se pudo cargar pagos.");
       setPayments([]);
     } finally {
       setIsLoading(false);

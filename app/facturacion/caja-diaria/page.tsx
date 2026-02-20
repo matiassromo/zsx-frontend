@@ -1,4 +1,4 @@
-'use client';
+﻿﻿'use client';
 
 import { useState } from 'react';
 import InfoBar from '@/app/components/InfoBar';
@@ -45,8 +45,6 @@ export default function CajaDiariaPage() {
 
   const status = cashBox?.status ?? null;
 
-  // Debug - eliminar después de arreglar
-  console.log('Debug:', { isLoading, cashBox, status, summary, error });
 
   return (  
     <div className="space-y-6">
@@ -92,13 +90,6 @@ export default function CajaDiariaPage() {
             </svg>
             <span>Cargando...</span>
           </div>
-        </div>
-      )}
-
-      {/* Debug info - eliminar después */}
-      {!isLoading && (
-        <div className="bg-yellow-50 border border-yellow-200 p-2 text-xs font-mono">
-          Estado: {status} | CashBox: {cashBox ? 'Sí' : 'No'} | Summary: {summary ? 'Sí' : 'No'}
         </div>
       )}
 
@@ -167,7 +158,7 @@ export default function CajaDiariaPage() {
           )}
 
                     {summary && (
-            <ManualMovementsHistory movements={(summary as any).manualMovements ?? []} />
+            <ManualMovementsHistory movements={summary.manualMovements ?? []} />
           )}
 
 
@@ -228,7 +219,7 @@ export default function CajaDiariaPage() {
           kind={manualKind}
           maxAmount={
             manualKind === 'Egreso'
-              ? (summary.cashBox.openingBalance + (summary.totalPayments ?? 0) - ((summary as any).manualExpense ?? 0))
+              ? (summary.cashBox.openingBalance + (summary.totalPayments ?? 0) - (summary.manualExpense ?? 0))
               : undefined
           }
           onSuccess={refetch}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
@@ -64,7 +64,7 @@ export function CloseTransactionDialog({
         onClose={onClose}
         onConfirm={handleConfirm}
         title="Cerrar Cuenta"
-        message="Esta seguro que desea cerrar esta cuenta? Esta accion no se puede deshacer."
+        message="¿Está seguro de que desea cerrar esta cuenta? Esta acción no se puede deshacer."
         confirmLabel="Cerrar Cuenta"
         variant="danger"
         isLoading={isLoading}

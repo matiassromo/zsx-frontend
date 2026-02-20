@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import type { CashBoxSummary } from '@/lib/api/types';
 import { formatCurrency } from '../utils/formatCurrency';
 
 interface DailyReportCardProps {
-  summary: CashBoxSummary;
+  summary: CashBoxSummary & { manualExpense?: number };
 }
 
 const TZ = 'America/Guayaquil';
@@ -35,7 +35,7 @@ function formatTime(dateString: string) {
 
 export function DailyReportCard({ summary }: DailyReportCardProps) {
   const { cashBox, totalPayments, cash, transfer, openTransactions, closedTransactions } = summary;
-  const manualExpense = (summary as any).manualExpense ?? 0;
+  const manualExpense = summary.manualExpense ?? 0;
   const closingBalance = cashBox.closingBalance ?? (cashBox.openingBalance + totalPayments - manualExpense);
 
   const totalTransactions = openTransactions + closedTransactions;

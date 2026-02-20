@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
@@ -65,7 +65,7 @@ export function PaymentFormModal({
     const nextErrors: Record<string, string> = {};
 
     if (!formData.transactionId) {
-      nextErrors.transactionId = 'Debe seleccionar una transaccion';
+      nextErrors.transactionId = 'Debe seleccionar una transacción';
     }
 
     const totalNum = parseFloat(formData.total);
@@ -140,13 +140,13 @@ export function PaymentFormModal({
             value={formData.transactionId}
             onChange={(id) => handleChange('transactionId', id)}
             error={errors.transactionId}
-            label="Transaccion (Cliente)"
-            placeholder="Buscar transaccion abierta..."
+            label="Transacción (Cliente)"
+            placeholder="Buscar transacción abierta..."
             filterStatus="Open"
           />
         ) : (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Transaccion</label>
+            <label className="block text-sm font-medium text-gray-700">Transacción</label>
             <p className="text-sm text-gray-900 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
               {payment?.client?.name || 'Sin cliente'}{' '}
               {payment?.transactionId ? `#${payment.transactionId.substring(0, 8)}` : ''}

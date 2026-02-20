@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore, useCallback } from "react";
 import { usePathname } from "next/navigation";
@@ -155,7 +155,6 @@ export function Sidebar() {
     }
 
     // 2) Llaves
-// 2) Llaves
     try {
       const keys = await getKeys();
       const list: Key[] = keys ?? [];
@@ -319,7 +318,7 @@ export function Sidebar() {
             <button
               onClick={logout}
               className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              title="Cerrar sesion"
+              title="Cerrar sesión"
             >
               <svg
                 className="h-5 w-5"

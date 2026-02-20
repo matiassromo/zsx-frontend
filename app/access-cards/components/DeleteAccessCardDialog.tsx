@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ConfirmDialog } from '@/app/components/ui/ConfirmDialog';
@@ -47,7 +47,7 @@ export function DeleteAccessCardDialog({
       onClose={onClose}
       onConfirm={handleConfirm}
       title="Eliminar Tarjeta"
-      message={`¿Estas seguro de que deseas eliminar la tarjeta "${cardId}"? Esta accion no se puede deshacer y se eliminaran todos los registros de uso asociados.`}
+      message={`¿Estás seguro de que deseas eliminar la tarjeta "${cardId}"? Esta acción no se puede deshacer y se eliminarán todos los registros de uso asociados.`}
       confirmLabel="Eliminar"
       cancelLabel="Cancelar"
       variant="danger"

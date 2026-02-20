@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/app/components/ui/Modal';
@@ -61,7 +61,7 @@ export function AccessCardFormModal({
     const newErrors: Record<string, string> = {};
 
     if (!isEditMode && !formData.transactionId) {
-      newErrors.transactionId = 'Debe seleccionar una transaccion';
+      newErrors.transactionId = 'Debe seleccionar una transacción';
     }
 
     if (formData.total === undefined || formData.total < 0) {
@@ -136,8 +136,8 @@ export function AccessCardFormModal({
             value={formData.transactionId}
             onChange={(id) => handleChange('transactionId', id)}
             error={errors.transactionId}
-            label="Transaccion (Cliente)"
-            placeholder="Buscar transaccion abierta..."
+            label="Transacción (Cliente)"
+            placeholder="Buscar transacción abierta..."
             filterStatus="Open"
           />
         )}

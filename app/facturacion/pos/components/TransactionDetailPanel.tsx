@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import type { TransactionDetail, EntranceTransaction, Parking, AccessCard } from '@/lib/api/types';
@@ -237,7 +237,7 @@ export function TransactionDetailPanel({ detail, isLoading, onRefresh }: Transac
           setAccessCardEdit({
             id: c.id,
             initial: {
-              uses: (c as any).uses,
+              uses: c.uses,
               total: c.total,
             },
           });

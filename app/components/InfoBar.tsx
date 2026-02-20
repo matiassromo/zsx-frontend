@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useSyncExternalStore } from 'react';
 
@@ -59,8 +59,8 @@ export default function InfoBar({ title }: InfoBarProps) {
   const currentTime = timeKey ? new Date(timeKey) : null;
 
   return (
-    <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white py-4">
-      <h1 className="text-lg font-normal text-gray-500">{title}</h1>
+    <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white py-3">
+      <h1 className="text-base font-semibold tracking-wide text-gray-800 uppercase">{title}</h1>
       <div className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-sm text-gray-600">
         {currentTime ? formatDateTime(currentTime) : ''}
       </div>

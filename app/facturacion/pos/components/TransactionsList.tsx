@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import type { Transaction } from '@/lib/api/types';
@@ -109,7 +109,7 @@ export function TransactionsList({
       <div className="relative">
         <input
           type="text"
-          placeholder="Buscar por nombre o cedula..."
+          placeholder="Buscar por nombre o cédula..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

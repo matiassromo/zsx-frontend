@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { BarOrder } from '@/lib/api/types';
 
@@ -56,10 +56,8 @@ export function BarSection({ barOrders, isOpen, onAdd, onEditDetail, onDeleteDet
                 <div className="space-y-1">
                   {order.details.map((d, idx) => {
                     const barProductId =
-                      // intenta varias formas comunes
-                      (d as any).barProductId ??
+                      d.barProductId ??
                       d.barProduct?.id ??
-                      (d as any).productId ??
                       '';
 
                     const name = d.barProduct?.name || 'Producto';

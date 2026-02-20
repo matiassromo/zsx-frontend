@@ -1,4 +1,4 @@
-// ParkingsTable.tsx
+﻿// ParkingsTable.tsx
 'use client';
 
 import { formatCurrency } from '@/app/facturacion/caja-diaria/utils/formatCurrency';
@@ -30,7 +30,7 @@ function formatDateTime(dateString: string): string {
 
 
 function formatTransactionId(id?: string | null): string {
-  if (!id) return 'Sin transaccion';
+  if (!id) return 'Sin transacción';
   return `#${id.substring(0, 8)}`;
 }
 
@@ -137,7 +137,7 @@ export function ParkingsTable({ parkings, isLoading, onEdit, onDelete }: Parking
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaccion</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transacción</th>
               <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
               <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salida</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>

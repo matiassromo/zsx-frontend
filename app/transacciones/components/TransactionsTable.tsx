@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { Transaction } from '@/lib/api/types';
 import { TransactionStatusChip } from './TransactionStatusChip';
@@ -155,7 +155,7 @@ export function TransactionsTable({
           />
         </svg>
         <h3 className="mt-2 text-sm font-medium text-gray-900">No hay transacciones</h3>
-        <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva transaccion.</p>
+        <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva transacción.</p>
       </div>
     );
   }
