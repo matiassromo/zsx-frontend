@@ -15,40 +15,34 @@ export function NumberStepper({
   min = 0,
   max = 99,
 }: NumberStepperProps) {
-  const inc = () => {
-    if (value < max) onChange(value + 1);
-  };
-
-  const dec = () => {
-    if (value > min) onChange(value - 1);
-  };
+  const inc = () => { if (value < max) onChange(value + 1); };
+  const dec = () => { if (value > min) onChange(value - 1); };
 
   return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">{label}</label>
-
+    <div className="space-y-1.5">
+      <label className="block text-xs font-medium uppercase tracking-wide text-slate-600">
+        {label}
+      </label>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={dec}
           disabled={value <= min}
-          className="w-8 h-8 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40 text-base font-medium"
         >
           −
         </button>
-
         <input
           type="text"
           value={value}
           readOnly
-          className="w-12 h-8 text-center border border-gray-300 rounded-md text-sm"
+          className="h-9 w-12 rounded-lg border border-slate-200 bg-white text-center text-sm font-medium text-slate-900"
         />
-
         <button
           type="button"
           onClick={inc}
           disabled={value >= max}
-          className="w-8 h-8 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40 text-base font-medium"
         >
           +
         </button>

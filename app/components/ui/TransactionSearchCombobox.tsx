@@ -140,7 +140,7 @@ export function TransactionSearchCombobox({
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-xs font-medium uppercase tracking-wide text-slate-600 mb-1.5">
           {label}
           <span className="text-red-500 ml-1">*</span>
         </label>
@@ -154,8 +154,8 @@ export function TransactionSearchCombobox({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={value ? '' : placeholder}
-          className={`w-full px-3 py-2 pr-10 border rounded-md shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-            error ? 'border-red-500' : 'border-gray-300'
+          className={`w-full rounded-lg border bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500/20 ${
+            error ? 'border-red-300 focus:border-red-400' : 'border-slate-200 hover:border-slate-300 focus:border-blue-500'
           }`}
         />
         {value && !isOpen && (
@@ -181,7 +181,7 @@ export function TransactionSearchCombobox({
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
 
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-10 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg shadow-black/5 max-h-60 overflow-auto">
           {isLoading ? (
             <div className="px-3 py-2 text-sm text-gray-500">Cargando...</div>
           ) : filteredTransactions.length === 0 ? (

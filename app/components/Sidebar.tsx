@@ -1,10 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { SidebarButton } from "./SidebarButton";
 import { useAuth } from "@/app/providers/AuthProvider";
-
 import { getTodayCashBox, getCashBoxSummary } from "@/lib/api/cash-boxes";
 import { getKeys } from "@/lib/api/keys";
 import { getEntranceTransactions } from "@/lib/api/entrance-transactions";
@@ -26,18 +25,16 @@ function isTodayFromDateTime(dateLike?: string) {
   );
 }
 
-// External store for KPI refresh triggers
+// External store for KPI refresh
 let kpiVersion = 0;
 const kpiListeners = new Set<() => void>();
 
 function subscribeToKpiRefresh(callback: () => void) {
   kpiListeners.add(callback);
-  // Schedule initial load
   const initialTimeout = setTimeout(() => {
     kpiVersion++;
     kpiListeners.forEach((l) => l());
   }, 0);
-  // Set up periodic refresh
   const interval = setInterval(() => {
     kpiVersion++;
     kpiListeners.forEach((l) => l());
@@ -53,37 +50,56 @@ function getKpiSnapshot() {
   return kpiVersion;
 }
 
-
-function MiniStat({
-  label,
-  value,
+/* ── Compact status bar ── */
+function StatusBar({
+  isOpen,
+  dateLabel,
+  income,
+  pending,
+  keysAvailable,
+  keysTotal,
+  peopleToday,
 }: {
-  label: string;
-  value: string | number;
+  isOpen: boolean;
+  dateLabel: string;
+  income: number;
+  pending: number;
+  keysAvailable: number;
+  keysTotal: number;
+  peopleToday: number;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1 text-xl font-semibold text-gray-900 leading-none">{value}</div>
-    </div>
-  );
-}
+    <div className="mx-3 my-2 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden">
+      {/* Cash row */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <span
+            className={`h-2 w-2 rounded-full ${isOpen ? "bg-emerald-500 shadow-[0_0_0_3px_#d1fae5]" : "bg-slate-300"}`}
+          />
+          <span className={`text-xs font-semibold ${isOpen ? "text-emerald-700" : "text-slate-500"}`}>
+            {isOpen ? "Caja abierta" : "Caja cerrada"}
+          </span>
+        </div>
+        <span className="text-xs font-medium text-slate-600">{money(income)}</span>
+      </div>
 
-function CashStatusCard({
-  statusText,
-  subText,
-  incomeText,
-}: {
-  statusText: string;
-  subText: string;
-  incomeText: string;
-}) {
-  return (
-    <div className="mx-4 mt-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-      <div className="text-sm font-semibold text-emerald-900">Estado de Caja</div>
-      <div className="mt-1 text-sm text-emerald-900">{statusText}</div>
-      <div className="mt-1 text-xs text-emerald-800">{subText}</div>
-      <div className="mt-2 text-xs text-emerald-800">{incomeText}</div>
+      {/* Stats row */}
+      <div className="grid grid-cols-3 divide-x divide-slate-100">
+        <div className="px-2 py-2 text-center">
+          <div className="text-[10px] text-slate-400 leading-none">Llaves</div>
+          <div className="mt-1 text-xs font-semibold text-slate-700 leading-none">
+            {keysAvailable}/{keysTotal}
+          </div>
+        </div>
+        <div className="px-2 py-2 text-center">
+          <div className="text-[10px] text-slate-400 leading-none">Personas</div>
+          <div className="mt-1 text-xs font-semibold text-slate-700 leading-none">{peopleToday}</div>
+        </div>
+        <div className="px-2 py-2 text-center">
+          <div className="text-[10px] text-slate-400 leading-none">Cuentas</div>
+          <div className="mt-1 text-xs font-semibold text-slate-700 leading-none">{pending}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -92,66 +108,44 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  // Sidebar KPIs
   const [cashStatus, setCashStatus] = useState<{
-    statusText: string;
-    subText: string;
-    incomeText: string;
+    isOpen: boolean;
+    dateLabel: string;
+    income: number;
     pending: number;
-  }>({
-    statusText: "Cargando…",
-    subText: "",
-    incomeText: "",
-    pending: 0,
-  });
+  }>({ isOpen: false, dateLabel: "-", income: 0, pending: 0 });
 
   const [peopleToday, setPeopleToday] = useState(0);
   const [keysStats, setKeysStats] = useState({ available: 0, total: 32 });
-
 
   const loadSidebarKpis = useCallback(async () => {
     // 1) Caja
     try {
       const cashBox = await getTodayCashBox();
       if (!cashBox) {
-        setCashStatus({
-          statusText: "Cerrada — sin caja hoy",
-          subText: "",
-          incomeText: "Ingresos: $0.00",
-          pending: 0,
-        });
+        setCashStatus({ isOpen: false, dateLabel: "-", income: 0, pending: 0 });
       } else {
-        const isOpen = cashBox.status === "Open";
+        const boxIsOpen = cashBox.status === "Open";
         const openedAt = cashBox.openedAt;
-        const dateLabel = openedAt ? new Date(openedAt).toLocaleDateString("es-EC") : new Date().toLocaleDateString("es-EC");
+        const dateLabel = openedAt
+          ? new Date(openedAt).toLocaleDateString("es-EC")
+          : new Date().toLocaleDateString("es-EC");
 
         let pending = 0;
         let income = 0;
-
         try {
           const summary = await getCashBoxSummary(cashBox.id);
           pending = summary?.openTransactions ?? 0;
-          // ingreso: usa totalPayments si existe (más real para caja)
           income = summary?.totalPayments ?? 0;
         } catch {
           pending = 0;
           income = 0;
         }
 
-        setCashStatus({
-          statusText: `${isOpen ? "Abierta" : "Cerrada"} — ${dateLabel}`,
-          subText: isOpen ? "Operando" : "Sin operación",
-          incomeText: `Ingresos: ${money(income)}`,
-          pending,
-        });
+        setCashStatus({ isOpen: boxIsOpen, dateLabel, income, pending });
       }
     } catch {
-      setCashStatus({
-        statusText: "Caja: error",
-        subText: "No se pudo cargar",
-        incomeText: "Ingresos: $0.00",
-        pending: 0,
-      });
+      setCashStatus({ isOpen: false, dateLabel: "-", income: 0, pending: 0 });
     }
 
     // 2) Llaves
@@ -160,26 +154,19 @@ export function Sidebar() {
       const list: Key[] = keys ?? [];
       const total = list.length || 32;
       const available = list.filter((k) => k.available === true).length;
-
       setKeysStats({ available, total });
     } catch {
       setKeysStats({ available: 0, total: 32 });
     }
 
-
-    // 3) Personas (Entradas/pases por día) -> suma Qty del día
-    // 3) Personas (día) = suma adultos + niños + tercera edad + discapacidad de entradas de HOY
+    // 3) Personas
     try {
       const entrances = await getEntranceTransactions();
-
       const today = (entrances ?? []).filter((e: EntranceTransaction) => {
-        // normalmente EntranceTransaction tiene entryTime
         if (typeof e?.entryTime === "string") return isTodayFromDateTime(e.entryTime);
-        // fallback por si tu backend manda createdAt
         if (typeof e?.createdAt === "string") return isTodayFromDateTime(e.createdAt);
         return false;
       });
-
       const people = today.reduce((acc: number, e: EntranceTransaction) => {
         const a = Number(e?.numberAdults ?? 0);
         const c = Number(e?.numberChildren ?? 0);
@@ -187,43 +174,35 @@ export function Sidebar() {
         const d = Number(e?.numberDisabled ?? 0);
         return acc + (Number.isFinite(a) ? a : 0) + (Number.isFinite(c) ? c : 0) + (Number.isFinite(s) ? s : 0) + (Number.isFinite(d) ? d : 0);
       }, 0);
-
       setPeopleToday(people);
     } catch {
       setPeopleToday(0);
     }
   }, []);
 
-  // Use external store to trigger refreshes without synchronous setState in effect
   const kpiTrigger = useSyncExternalStore(subscribeToKpiRefresh, getKpiSnapshot, () => 0);
 
   useEffect(() => {
-    // Initial load and periodic refresh triggered by external store change
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSidebarKpis();
   }, [kpiTrigger, loadSidebarKpis]);
 
   useEffect(() => {
-    // realtime cross-modules
     const ch = new BroadcastChannel("zs-events");
     ch.onmessage = () => loadSidebarKpis();
-
-    return () => {
-      ch.close();
-    };
+    return () => ch.close();
   }, [loadSidebarKpis]);
 
   const pending = useMemo(() => cashStatus.pending ?? 0, [cashStatus]);
 
   return (
     <>
-      {/* Hamburger button - mobile */}
+      {/* Hamburger – mobile */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-40 p-2 rounded-md bg-white shadow-md md:hidden"
-        aria-label="Open menu"
+        className="fixed top-0 left-0 z-40 flex h-14 w-14 items-center justify-center bg-white border-r border-b border-slate-200 md:hidden"
+        aria-label="Abrir menú"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
@@ -231,107 +210,98 @@ export function Sidebar() {
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar panel */}
       <nav
         className={`
-          fixed top-0 left-0 z-50 h-screen w-[70vw] max-w-[320px] bg-white border-r border-gray-200
+          fixed top-0 left-0 z-50 h-screen w-72 md:w-[260px] bg-white border-r border-slate-200
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:w-[20vw]
+          md:translate-x-0
           flex flex-col
         `}
       >
-
-        {/* Close button mobile */}
+        {/* Close – mobile */}
         <button
           onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 p-2 rounded-md hover:bg-gray-100 md:hidden"
-          aria-label="Close menu"
+          className="absolute top-3.5 right-3.5 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 md:hidden transition-colors"
+          aria-label="Cerrar menú"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
-        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-        {/* Logo */}
-        <div className="p-4 pt-16 md:pt-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500 text-white font-bold">
-              Z
+        {/* Scrollable content */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-4 py-4 mt-2 md:mt-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white shadow-sm">
+              ZS
             </div>
-            <div className="leading-tight">
-              <div className="font-semibold text-gray-900">Zero Stress Pool Management System</div>
-              <div className="text-xs text-gray-500">Panel Único</div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-slate-900 truncate">Zero Stress Pool</div>
+              <div className="text-xs text-slate-400">Panel de Gestión</div>
             </div>
+          </div>
+
+          {/* Status bar */}
+          <StatusBar
+            isOpen={cashStatus.isOpen}
+            dateLabel={cashStatus.dateLabel}
+            income={cashStatus.income}
+            pending={pending}
+            keysAvailable={keysStats.available}
+            keysTotal={keysStats.total}
+            peopleToday={peopleToday}
+          />
+
+          {/* Navigation */}
+          <div className="px-2 mt-1 pb-4 space-y-0.5">
+            <NavLabel>Principal</NavLabel>
+            <SidebarButton href="/dashboard">Dashboard</SidebarButton>
+
+            <NavLabel>Facturación</NavLabel>
+            <FacturacionGroup />
+
+            <NavLabel>Operaciones</NavLabel>
+            <SidebarButton href="/transacciones">Transacciones</SidebarButton>
+            <SidebarButton href="/payments">Pagos</SidebarButton>
+            <SidebarButton href="/clientes">Clientes</SidebarButton>
+            <SidebarButton href="/bar-orders">Bar</SidebarButton>
+            <SidebarButton href="/parkings">Parqueos</SidebarButton>
+            <SidebarButton href="/entrance-transaction">Entradas</SidebarButton>
+            <SidebarButton href="/lockers">Lockers</SidebarButton>
+
+            <NavLabel>Configuración</NavLabel>
+            <SidebarButton href="/products">Productos</SidebarButton>
+            <SidebarButton href="/access-cards">Tarjetas de Pases</SidebarButton>
           </div>
         </div>
 
-        {/* Indicadores (como la foto) */}
-        <CashStatusCard
-          statusText={cashStatus.statusText}
-          subText={cashStatus.subText}
-          incomeText={cashStatus.incomeText}
-        />
-
-        <div className="mx-4 mt-3 grid grid-cols-3 gap-3">
-          <MiniStat label="Personas" value={peopleToday} />
-          <MiniStat label="Llaves" value={`${keysStats.available}/${keysStats.total}`} />
-          <MiniStat label="Cuentas Activas" value={pending} />
-        </div>
-
-        {/* Navigation */}
-        <nav className="mt-6 px-4 space-y-1">
-          <SidebarButton href="/dashboard">Dashboard</SidebarButton>
-
-          {/* FACTURACIÓN (DESPLEGABLE) */}
-          <FacturacionGroup />
-
-          <SidebarButton href="/transacciones">Transacciones</SidebarButton>
-          <SidebarButton href="/payments">Pagos</SidebarButton>
-          <SidebarButton href="/clientes">Clientes</SidebarButton>
-          <SidebarButton href="/bar-orders">Bar</SidebarButton>
-          <SidebarButton href="/parkings">Parqueos</SidebarButton>
-          <SidebarButton href="/entrance-transaction">Entradas</SidebarButton>
-          <SidebarButton href="/lockers">Lockers</SidebarButton>
-          <SidebarButton href="/products">Productos</SidebarButton>
-          <SidebarButton href="/access-cards">Tarjetas de Pases</SidebarButton>
-        </nav>
-        </div>
-
-        {/* User info and logout - pushed to bottom */}
-        <div className="mt-auto border-t border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-700">
+        {/* User section */}
+        <div className="shrink-0 border-t border-slate-100 px-3 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
                 {user?.username?.charAt(0).toUpperCase() || "U"}
               </div>
-              <span className="text-sm font-medium text-gray-700 truncate max-w-[100px]">
+              <span className="text-sm font-medium text-slate-700 truncate">
                 {user?.username || "Usuario"}
               </span>
             </div>
             <button
               onClick={logout}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               title="Cerrar sesión"
+              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </button>
           </div>
@@ -341,9 +311,17 @@ export function Sidebar() {
   );
 }
 
-/* ===============================
-   Facturación group (submenu)
-================================ */
+function NavLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-2 pt-3 pb-1">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/* ── Facturación submenu ── */
 function FacturacionGroup() {
   const pathname = usePathname();
   const isActive = pathname.startsWith("/facturacion");
@@ -355,13 +333,16 @@ function FacturacionGroup() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`
-          w-full flex items-center justify-between px-4 py-2 rounded-md
-          ${isActive ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-100"}
+          w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
+          ${isActive
+            ? "bg-blue-600 text-white font-medium"
+            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-normal"
+          }
         `}
       >
-        <span className="font-medium">Facturación</span>
+        <span>Facturación</span>
         <svg
-          className={`w-4 h-4 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
+          className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -372,17 +353,11 @@ function FacturacionGroup() {
 
       <div
         className={`
-          overflow-hidden transition-all duration-300 ease-in-out
+          overflow-hidden transition-all duration-200 ease-in-out
           ${open ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}
         `}
       >
-        <div
-          className={`
-            mt-1 ml-4 border-l border-gray-200 pl-3 space-y-1
-            transform transition-all duration-300
-            ${open ? "translate-y-0" : "-translate-y-2"}
-          `}
-        >
+        <div className="mt-0.5 ml-3 border-l-2 border-slate-100 pl-2.5 space-y-0.5">
           <SidebarButton href="/facturacion/pos">Punto de Venta</SidebarButton>
           <SidebarButton href="/facturacion/caja-diaria">Caja Diaria</SidebarButton>
           <SidebarButton href="/facturacion/reporte-ventas">Reporte de Ventas</SidebarButton>

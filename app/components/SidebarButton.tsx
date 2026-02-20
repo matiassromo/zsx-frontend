@@ -16,10 +16,10 @@ export function SidebarButton({ href, children }: SidebarButtonProps) {
     <Link
       href={href}
       className={`
-        block px-4 py-2 text-left text-sm font-medium transition-colors rounded-lg
+        flex items-center px-3 py-2 rounded-lg text-sm transition-colors
         ${isActive
-          ? 'bg-blue-500 text-white'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? 'bg-blue-600 text-white font-medium shadow-sm'
+          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-normal'
         }
       `}
     >

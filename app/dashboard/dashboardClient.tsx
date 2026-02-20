@@ -12,23 +12,23 @@ import {
   Activity,
   Clock,
   MessageCircle,
+  ShoppingCart,
+  Car,
+  Ticket,
   type LucideIcon,
 } from "lucide-react";
 import { getDashboardSnapshot, type DashboardSnapshot } from "@/lib/api/dashboard";
 import AnalystChatDrawer from "@/app/dashboard/components/AnalystChatDrawer";
 
-// External store for dashboard refresh triggers
 let dashboardVersion = 0;
 const dashboardListeners = new Set<() => void>();
 
 function subscribeToDashboardRefresh(callback: () => void) {
   dashboardListeners.add(callback);
-  // Schedule initial load
   const initialTimeout = setTimeout(() => {
     dashboardVersion++;
     dashboardListeners.forEach((l) => l());
   }, 0);
-  // Set up periodic refresh
   const interval = setInterval(() => {
     dashboardVersion++;
     dashboardListeners.forEach((l) => l());
@@ -54,24 +54,47 @@ function StatCard({
   hint,
   icon: Icon,
   gradient,
+  textColor = "text-slate-900",
 }: {
   title: string;
   value: string;
   hint?: string;
   icon: LucideIcon;
   gradient: string;
+  textColor?: string;
 }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-br ${gradient} p-5 shadow-sm`}
-    >
-      <div className="absolute right-4 top-4 opacity-20">
-        <Icon size={48} />
+    <div className={`relative overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-br ${gradient} p-5`}>
+      <div className="absolute right-3 top-3 opacity-15">
+        <Icon size={44} />
       </div>
+      <div className="text-xs font-medium uppercase tracking-wide opacity-60">{title}</div>
+      <div className={`mt-2 text-2xl font-semibold tracking-tight ${textColor}`}>{value}</div>
+      {hint && <div className="mt-1 text-xs opacity-60">{hint}</div>}
+    </div>
+  );
+}
 
-      <div className="text-sm font-medium opacity-80">{title}</div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight">{value}</div>
-      {hint ? <div className="mt-1 text-xs opacity-70">{hint}</div> : null}
+function DiagCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  color: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
+        <Icon size={16} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs text-slate-500 truncate">{label}</div>
+        <div className="text-sm font-semibold text-slate-900 truncate">{value}</div>
+      </div>
     </div>
   );
 }
@@ -88,8 +111,8 @@ function Section({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {subtitle && <p className="text-sm opacity-70">{subtitle}</p>}
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
       </div>
       {children}
     </section>
@@ -110,71 +133,64 @@ export default function DashboardClient() {
     }
   }, []);
 
-  // Use external store to trigger refreshes without synchronous setState in effect
   const refreshTrigger = useSyncExternalStore(subscribeToDashboardRefresh, getDashboardRefreshSnapshot, () => 0);
 
   useEffect(() => {
-    // Initial load and periodic refresh triggered by external store change
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [refreshTrigger, load]);
 
   useEffect(() => {
     const ch = new BroadcastChannel("zs-events");
     ch.onmessage = () => load();
-
-    return () => {
-      ch.close();
-    };
+    return () => ch.close();
   }, [load]);
 
   const keys = useMemo(() => {
     const total = data?.keys?.total ?? 0;
     const available = data?.keys?.available ?? 0;
-    const men = data?.keys?.availableMen ?? 0;
-    const women = data?.keys?.availableWomen ?? 0;
-    return { total, available, men, women };
+    return { total, available };
   }, [data]);
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm opacity-70">
-            Vista general operativa y financiera (día actual)
-          </p>
+          <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
+          <p className="mt-0.5 text-sm text-slate-500">Vista operativa y financiera del día</p>
         </div>
-
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsChatOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm shadow-sm hover:bg-black/5"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition-colors"
           >
-            <MessageCircle size={16} />
-            Chat con analista
+            <MessageCircle size={14} />
+            <span className="hidden sm:inline">Analista</span>
           </button>
           <button
             onClick={load}
-            className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm shadow-sm hover:bg-black/5"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition-colors"
           >
-            <RefreshCcw size={16} />
-            Refrescar
+            <RefreshCcw size={14} />
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </div>
 
       <AnalystChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
           {error}
         </div>
       )}
 
-      {/* OPERATIVO */}
+      {/* Operativo */}
       <Section title="Estado operativo">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             title="Llaves disponibles"
             value={`${keys.available} / ${keys.total}`}
@@ -182,7 +198,7 @@ export default function DashboardClient() {
             gradient="from-blue-50 to-blue-100"
           />
           <StatCard
-            title="Personas (día)"
+            title="Personas hoy"
             value={`${data?.people?.today ?? 0}`}
             icon={Users}
             gradient="from-indigo-50 to-indigo-100"
@@ -202,9 +218,9 @@ export default function DashboardClient() {
         </div>
       </Section>
 
-      {/* FINANCIERO */}
+      {/* Financiero */}
       <Section title="Resumen financiero">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             title="Ingresos"
             value={money(data?.money?.incomeToday ?? 0)}
@@ -218,29 +234,47 @@ export default function DashboardClient() {
             gradient="from-rose-50 to-rose-100"
           />
           <StatCard
-            title="Balance"
+            title="Balance neto"
             value={money(data?.money?.netToday ?? 0)}
             icon={DollarSign}
             gradient="from-green-50 to-green-100"
           />
           <StatCard
-            title="Última actualización"
-            value={data?.meta?.generatedAtLocal ?? "-"}
+            title="Actualizado"
+            value={data?.meta?.generatedAtLocal ?? "—"}
             icon={Clock}
             gradient="from-gray-50 to-gray-100"
           />
         </div>
       </Section>
 
-      {/* DIAGNÓSTICO */}
+      {/* Diagnóstico */}
       <Section title="Diagnóstico rápido">
-        <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-            <div>• Llaves ocupadas: {data?.keys?.busy ?? 0}</div>
-            <div>• Ventas Bar: {money(data?.bar?.salesToday ?? 0)}</div>
-            <div>• Parqueos: {data?.parking?.countToday ?? 0}</div>
-            <div>• Entradas / pases: {data?.passes?.entriesToday ?? 0}</div>
-          </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <DiagCard
+            label="Llaves ocupadas"
+            value={`${data?.keys?.busy ?? 0} llaves`}
+            icon={KeyRound}
+            color="bg-blue-100 text-blue-600"
+          />
+          <DiagCard
+            label="Ventas Bar"
+            value={money(data?.bar?.salesToday ?? 0)}
+            icon={ShoppingCart}
+            color="bg-amber-100 text-amber-600"
+          />
+          <DiagCard
+            label="Parqueos hoy"
+            value={`${data?.parking?.countToday ?? 0} vehículos`}
+            icon={Car}
+            color="bg-slate-100 text-slate-600"
+          />
+          <DiagCard
+            label="Entradas / pases"
+            value={`${data?.passes?.entriesToday ?? 0} personas`}
+            icon={Ticket}
+            color="bg-green-100 text-green-600"
+          />
         </div>
       </Section>
     </div>

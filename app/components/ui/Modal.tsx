@@ -15,7 +15,7 @@ const sizeClasses = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
-  xl: 'max-w-5xl',
+  xl: 'max-w-3xl',
 };
 
 function subscribe() {
@@ -53,34 +53,36 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 transition-opacity"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Modal content */}
+      {/* Panel */}
       <div
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-lg shadow-xl`}
+        className={`relative flex flex-col w-full ${sizeClasses[size]} max-h-[90vh] bg-white rounded-2xl shadow-2xl shadow-black/10 ring-1 ring-black/5`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 id="modal-title" className="text-lg font-semibold text-gray-900">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 id="modal-title" className="text-sm font-semibold text-slate-900">
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
             aria-label="Cerrar"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        {/* Body */}
-        <div className="px-6 py-4">{children}</div>
+        {/* Body – scrollable */}
+        <div className="overflow-y-auto px-5 py-4 flex-1">
+          {children}
+        </div>
       </div>
     </div>,
     document.body

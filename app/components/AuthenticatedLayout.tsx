@@ -11,6 +11,14 @@ interface AuthenticatedLayoutProps {
 
 const PUBLIC_ROUTES = ["/login"];
 
+function Spinner() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-slate-200 border-t-blue-600" />
+    </div>
+  );
+}
+
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
@@ -20,53 +28,27 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
   useEffect(() => {
     if (isLoading) return;
-
-    if (!isAuthenticated && !isPublicRoute) {
-      // Redirect unauthenticated users to login
-      router.replace("/login");
-    } else if (isAuthenticated && isPublicRoute) {
-      // Redirect authenticated users away from login
-      router.replace("/dashboard");
-    }
+    if (!isAuthenticated && !isPublicRoute) router.replace("/login");
+    else if (isAuthenticated && isPublicRoute) router.replace("/dashboard");
   }, [isAuthenticated, isLoading, isPublicRoute, router]);
 
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-      </div>
-    );
-  }
+  if (isLoading) return <Spinner />;
 
-  // Public routes (login) - render without sidebar
   if (isPublicRoute) {
-    // If authenticated, show loading while redirecting
-    if (isAuthenticated) {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-        </div>
-      );
-    }
+    if (isAuthenticated) return <Spinner />;
     return <>{children}</>;
   }
 
-  // Protected routes - require authentication
-  if (!isAuthenticated) {
-    // Show loading while redirecting to login
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-      </div>
-    );
-  }
+  if (!isAuthenticated) return <Spinner />;
 
-  // Authenticated - show sidebar and content
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 p-4 pt-16 md:pt-4 md:ml-[20vw]">{children}</main>
+      <main className="flex-1 min-w-0 pt-14 md:pt-0 md:ml-[260px]">
+        <div className="px-4 py-4 md:px-6 md:py-5 max-w-7xl">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
