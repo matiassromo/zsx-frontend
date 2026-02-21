@@ -54,23 +54,27 @@ function StatCard({
   hint,
   icon: Icon,
   gradient,
-  textColor = "text-slate-900",
+  iconBg = "bg-blue-500",
 }: {
   title: string;
   value: string;
   hint?: string;
   icon: LucideIcon;
   gradient: string;
-  textColor?: string;
+  iconBg?: string;
 }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-br ${gradient} p-5`}>
-      <div className="absolute right-3 top-3 opacity-15">
-        <Icon size={44} />
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-br ${gradient} p-5 shadow-sm transition-shadow hover:shadow-md`}
+    >
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconBg} shadow-sm`}>
+        <Icon size={18} className="text-white" />
       </div>
-      <div className="text-xs font-medium uppercase tracking-wide opacity-60">{title}</div>
-      <div className={`mt-2 text-2xl font-semibold tracking-tight ${textColor}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs opacity-60">{hint}</div>}
+      <div className="mt-4">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500/70">{title}</div>
+        <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{value}</div>
+        {hint && <div className="mt-1 text-xs text-slate-500/60">{hint}</div>}
+      </div>
     </div>
   );
 }
@@ -80,20 +84,24 @@ function DiagCard({
   value,
   icon: Icon,
   color,
+  accent,
 }: {
   label: string;
   value: string;
   icon: LucideIcon;
   color: string;
+  accent: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3">
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
+    <div
+      className={`flex items-center gap-3 rounded-xl border border-slate-100 border-l-4 ${accent} bg-white px-4 py-3.5 shadow-sm transition-shadow hover:shadow-md`}
+    >
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color}`}>
         <Icon size={16} />
       </div>
       <div className="min-w-0">
-        <div className="text-xs text-slate-500 truncate">{label}</div>
-        <div className="text-sm font-semibold text-slate-900 truncate">{value}</div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 truncate">{label}</div>
+        <div className="mt-0.5 text-sm font-semibold text-slate-900 truncate">{value}</div>
       </div>
     </div>
   );
@@ -101,18 +109,16 @@ function DiagCard({
 
 function Section({
   title,
-  subtitle,
   children,
 }: {
   title: string;
-  subtitle?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+    <section className="space-y-4">
+      <div className="flex items-center gap-3">
+        <h2 className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-slate-400">{title}</h2>
+        <div className="flex-1 h-px bg-slate-200/70" />
       </div>
       {children}
     </section>
@@ -156,8 +162,8 @@ export default function DashboardClient() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Vista operativa y financiera del día</p>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="mt-0.5 text-sm text-slate-500">Resumen operativo y financiero del día</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
@@ -188,7 +194,7 @@ export default function DashboardClient() {
         </div>
       )}
 
-      {/* Operativo */}
+      {/* Estado Operativo */}
       <Section title="Estado operativo">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
@@ -196,29 +202,33 @@ export default function DashboardClient() {
             value={`${keys.available} / ${keys.total}`}
             icon={KeyRound}
             gradient="from-blue-50 to-blue-100"
+            iconBg="bg-blue-500"
           />
           <StatCard
             title="Personas hoy"
             value={`${data?.people?.today ?? 0}`}
             icon={Users}
             gradient="from-indigo-50 to-indigo-100"
+            iconBg="bg-indigo-500"
           />
           <StatCard
             title="Cuentas abiertas"
             value={`${data?.pos?.openAccounts ?? 0}`}
             icon={Wallet}
             gradient="from-violet-50 to-violet-100"
+            iconBg="bg-violet-500"
           />
           <StatCard
             title="Transacciones"
             value={`${data?.money?.txCountToday ?? 0}`}
             icon={Activity}
             gradient="from-slate-50 to-slate-100"
+            iconBg="bg-slate-500"
           />
         </div>
       </Section>
 
-      {/* Financiero */}
+      {/* Resumen Financiero */}
       <Section title="Resumen financiero">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
@@ -226,29 +236,33 @@ export default function DashboardClient() {
             value={money(data?.money?.incomeToday ?? 0)}
             icon={ArrowUpCircle}
             gradient="from-emerald-50 to-emerald-100"
+            iconBg="bg-emerald-500"
           />
           <StatCard
             title="Egresos"
             value={money(data?.money?.expenseToday ?? 0)}
             icon={ArrowDownCircle}
             gradient="from-rose-50 to-rose-100"
+            iconBg="bg-rose-500"
           />
           <StatCard
             title="Balance neto"
             value={money(data?.money?.netToday ?? 0)}
             icon={DollarSign}
             gradient="from-green-50 to-green-100"
+            iconBg="bg-green-600"
           />
           <StatCard
             title="Actualizado"
             value={data?.meta?.generatedAtLocal ?? "—"}
             icon={Clock}
             gradient="from-gray-50 to-gray-100"
+            iconBg="bg-gray-400"
           />
         </div>
       </Section>
 
-      {/* Diagnóstico */}
+      {/* Diagnóstico Rápido */}
       <Section title="Diagnóstico rápido">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <DiagCard
@@ -256,24 +270,28 @@ export default function DashboardClient() {
             value={`${data?.keys?.busy ?? 0} llaves`}
             icon={KeyRound}
             color="bg-blue-100 text-blue-600"
+            accent="border-l-blue-400"
           />
           <DiagCard
             label="Ventas Bar"
             value={money(data?.bar?.salesToday ?? 0)}
             icon={ShoppingCart}
             color="bg-amber-100 text-amber-600"
+            accent="border-l-amber-400"
           />
           <DiagCard
             label="Parqueos hoy"
             value={`${data?.parking?.countToday ?? 0} vehículos`}
             icon={Car}
             color="bg-slate-100 text-slate-600"
+            accent="border-l-slate-400"
           />
           <DiagCard
             label="Entradas / pases"
             value={`${data?.passes?.entriesToday ?? 0} personas`}
             icon={Ticket}
             color="bg-green-100 text-green-600"
+            accent="border-l-green-400"
           />
         </div>
       </Section>
