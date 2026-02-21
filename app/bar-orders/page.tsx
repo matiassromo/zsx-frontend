@@ -10,6 +10,7 @@ import { TransactionSearchCombobox } from '@/app/components/ui/TransactionSearch
 import { useBarProducts } from '@/app/products/hooks/useBarProducts';
 import { formatCurrency } from '@/app/facturacion/caja-diaria/utils/formatCurrency';
 import { createBarOrder, createBarOrderDetail, deleteBarOrder, getBarOrders } from '@/lib/api/bar-orders';
+import { getTransactions } from '@/lib/api/transactions';
 import type { BarOrder, BarProduct, Transaction } from '@/lib/api/types';
 import toast from 'react-hot-toast';
 import { TransactionStatusChip } from '@/app/transacciones/components/TransactionStatusChip';
@@ -93,10 +94,12 @@ function BarOrdersTable({
   orders,
   isLoading,
   onDelete,
+  txClientMap,
 }: {
   orders: BarOrder[];
   isLoading: boolean;
   onDelete: (order: BarOrder) => void;
+  txClientMap: Map<string, string>;
 }) {
   if (!isLoading && orders.length === 0) {
     return (
@@ -120,7 +123,7 @@ function BarOrdersTable({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transacción</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
             <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
             <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th>
@@ -153,7 +156,9 @@ function BarOrdersTable({
             orders.map((order) => (
               <tr key={order.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                  {order.transactionId ? `#${order.transactionId.substring(0, 8)}` : '-'}
+                  {order.transactionId
+                    ? (txClientMap.get(order.transactionId) ?? `#${order.transactionId.substring(0, 8)}`)
+                    : '-'}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(order.total)}</td>
                 <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{formatDate(order.createdAt)}</td>
@@ -504,6 +509,7 @@ function TransactionsTable({
 
 export default function BarOrdersPage() {
   const [orders, setOrders] = useState<BarOrder[]>([]);
+  const [txClientMap, setTxClientMap] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<BarOrder | null>(null);
@@ -512,8 +518,12 @@ export default function BarOrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const data = await getBarOrders();
+      const [data, transactions] = await Promise.all([
+        getBarOrders(),
+        getTransactions(),
+      ]);
       setOrders(data);
+      setTxClientMap(new Map(transactions.map((t) => [t.id, t.client?.name ?? `#${t.id.substring(0, 8)}`])));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al cargar órdenes';
       toast.error(message);
@@ -551,7 +561,7 @@ export default function BarOrdersPage() {
         <CreateButton label="Nueva orden" onClick={() => setIsCreateOpen(true)} />
       </div>
 
-      <BarOrdersTable orders={orders} isLoading={isLoading} onDelete={setDeletingOrder} />
+      <BarOrdersTable orders={orders} isLoading={isLoading} onDelete={setDeletingOrder} txClientMap={txClientMap} />
 
       <BarOrderFormModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSuccess={fetchOrders} />
 

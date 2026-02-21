@@ -360,6 +360,7 @@ function FacturacionGroup() {
         <div className="mt-0.5 ml-3 border-l-2 border-slate-100 pl-2.5 space-y-0.5">
           <SidebarButton href="/facturacion/pos">Punto de Venta</SidebarButton>
           <SidebarButton href="/facturacion/caja-diaria">Caja Diaria</SidebarButton>
+          <SidebarButton href="/facturacion/caja-diaria/historial">Historial</SidebarButton>
           <SidebarButton href="/facturacion/reporte-ventas">Reporte de Ventas</SidebarButton>
         </div>
       </div>

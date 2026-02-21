@@ -97,6 +97,12 @@ export async function getTodayCashBox(date?: string): Promise<CashBox | null> {
   return null;
 }
 
+export async function getCashBoxById(id: string): Promise<CashBox | null> {
+  const response = await apiClient<AnyRecord>(`/api/CashBoxes/${id}`);
+  if (!response) return null;
+  return mapCashBoxDtoToFront(response);
+}
+
 export async function getCashBoxesByRange(from?: string, to?: string): Promise<CashBox[]> {
   const list = await apiClient<AnyRecord[]>("/api/CashBoxes/range", {
     params: { from, to },

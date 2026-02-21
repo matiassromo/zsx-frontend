@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getKeys } from '@/lib/api/keys';
+import { getTransactions } from '@/lib/api/transactions';
 import type { Key } from '@/lib/api/types';
 
 interface UseKeysReturn {
@@ -20,8 +21,16 @@ export function useKeys(): UseKeysReturn {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getKeys();
-      setKeys(data);
+      const [rawKeys, transactions] = await Promise.all([
+        getKeys(),
+        getTransactions(),
+      ]);
+      const txMap = new Map(transactions.map((t) => [t.id, t]));
+      const enriched = rawKeys.map((k) => ({
+        ...k,
+        transaction: k.transactionId ? (txMap.get(k.transactionId) ?? null) : null,
+      }));
+      setKeys(enriched);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error al cargar llaves'));
     } finally {
