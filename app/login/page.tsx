@@ -113,6 +113,21 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Demo credentials */}
+          <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-blue-500">
+              Acceso Demo
+            </p>
+            <div className="flex justify-between text-xs text-slate-600">
+              <span>Usuario</span>
+              <span className="font-mono font-semibold text-slate-800">demo</span>
+            </div>
+            <div className="mt-1 flex justify-between text-xs text-slate-600">
+              <span>Contraseña</span>
+              <span className="font-mono font-semibold text-slate-800">demo123</span>
+            </div>
+          </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
